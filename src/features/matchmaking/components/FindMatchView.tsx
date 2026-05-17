@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { motion } from "framer-motion";
 import { Swords } from "lucide-react";
 import styled from "styled-components";
@@ -15,9 +15,10 @@ type MatchmakingState = "idle" | "searching" | "found";
 
 export function FindMatchView() {
   const [state, setState] = useState<MatchmakingState>("idle");
-  const wait = useMemo(() => Math.floor(35 + Math.random() * 55), [state]);
+  const [wait, setWait] = useState(() => Math.floor(35 + Math.random() * 55));
 
   function startSearch() {
+    setWait(Math.floor(35 + Math.random() * 55));
     setState("searching");
     window.setTimeout(() => setState("found"), 1800);
   }

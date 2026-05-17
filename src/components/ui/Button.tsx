@@ -1,9 +1,10 @@
 "use client";
 
 import { motion } from "framer-motion";
+import type { HTMLMotionProps } from "framer-motion";
 import styled, { css } from "styled-components";
 
-interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+interface ButtonProps extends HTMLMotionProps<"button"> {
   variant?: "primary" | "secondary" | "danger" | "ghost";
   fullWidth?: boolean;
 }
