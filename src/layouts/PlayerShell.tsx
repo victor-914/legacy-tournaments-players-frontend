@@ -20,8 +20,8 @@ export function PlayerShell({ children }: { children: React.ReactNode }) {
     <Shell>
       <Sidebar>
         <Brand>
-          <Mark>HG</Mark>
-          <span>Hammer Games</span>
+          <Mark>LG</Mark>
+          <span>Legacy Gaming</span>
         </Brand>
         <Nav>
           {playerNavigation.slice(0, 7).map((item) => {
