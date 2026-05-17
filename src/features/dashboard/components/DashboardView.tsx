@@ -1,9 +1,9 @@
 "use client";
 
-import Image from "next/image";
 import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import styled from "styled-components";
+import { AvatarImage } from "@/components/ui/AvatarImage";
 import { Badge } from "@/components/ui/Badge";
 import { Card, CardBody } from "@/components/ui/Card";
 import { LeaderboardTable } from "@/components/ui/LeaderboardTable";
@@ -39,7 +39,7 @@ export function DashboardView() {
         <CardBody>
           <HeroGrid>
             <Identity>
-              <Image src={data.player.avatarUrl} alt="" width={92} height={92} />
+              <AvatarImage src={data.player.avatarUrl} alt={`${data.player.gamerTag} avatar`} size={92} />
               <div>
                 <Badge status={data.player.qualificationStatus} />
                 <h1>{data.player.gamerTag}</h1>

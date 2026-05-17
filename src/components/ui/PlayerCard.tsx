@@ -1,9 +1,9 @@
 "use client";
 
-import Image from "next/image";
 import styled from "styled-components";
 import { motion } from "framer-motion";
 import type { Player } from "@/types/domain";
+import { AvatarImage } from "@/components/ui/AvatarImage";
 import { Badge } from "@/components/ui/Badge";
 import { Card, CardBody } from "@/components/ui/Card";
 import { formatNumber } from "@/utils/format";
@@ -20,7 +20,7 @@ export function PlayerCard({ player, highlight = false, rankLabel }: PlayerCardP
       <CardBody>
         <Top>
           <AvatarWrap>
-            <Image src={player.avatarUrl} alt="" width={58} height={58} />
+            <AvatarImage src={player.avatarUrl} alt={`${player.gamerTag} avatar`} size={58} />
           </AvatarWrap>
           <div>
             {rankLabel ? <Rank>{rankLabel}</Rank> : null}

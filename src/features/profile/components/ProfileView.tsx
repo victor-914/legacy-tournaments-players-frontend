@@ -1,8 +1,8 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import Image from "next/image";
 import styled from "styled-components";
+import { AvatarImage } from "@/components/ui/AvatarImage";
 import { Badge } from "@/components/ui/Badge";
 import { Card, CardBody } from "@/components/ui/Card";
 import { Grid, PageStack, SectionTitle } from "@/components/ui/PagePrimitives";
@@ -22,7 +22,7 @@ export function ProfileView() {
     <PageStack>
       <Hero>
         <CardBody>
-          <Image src={data.avatarUrl} alt="" width={104} height={104} />
+          <AvatarImage src={data.avatarUrl} alt={`${data.gamerTag} avatar`} size={104} />
           <Badge status={data.qualificationStatus} />
           <h1>{data.gamerTag}</h1>
           <p>{data.rank} / Level {data.level} / {formatNumber(data.xp)} XP</p>

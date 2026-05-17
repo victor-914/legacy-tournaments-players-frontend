@@ -1,8 +1,8 @@
 "use client";
 
-import Image from "next/image";
 import { motion } from "framer-motion";
 import styled from "styled-components";
+import { AvatarImage } from "@/components/ui/AvatarImage";
 import { Badge } from "@/components/ui/Badge";
 import type { Standing } from "@/types/domain";
 import { formatNumber } from "@/utils/format";
@@ -38,7 +38,7 @@ export function LeaderboardTable({ standings, showQualificationLine = true }: Le
             <td>#{standing.rank}</td>
             <td>
               <PlayerCell>
-                <Image src={standing.player.avatarUrl} alt="" width={32} height={32} />
+                <AvatarImage src={standing.player.avatarUrl} alt={`${standing.player.gamerTag} avatar`} size={32} />
                 <span>{standing.player.gamerTag}</span>
               </PlayerCell>
             </td>
