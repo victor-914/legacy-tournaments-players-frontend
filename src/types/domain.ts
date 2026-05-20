@@ -190,6 +190,22 @@ export interface MockActiveLiveMatch {
   createdAt: string;
 }
 
+export interface RegisterQualificationPayload {
+  fullName: string;
+  email: string;
+  gameTag: string;
+  phoneNumber: string;
+  telegramUsername: string;
+  discordUsername?: string;
+  currentXp: number;
+  statScreenshot: File | null;
+}
+
+export interface RegisterPasswordPayload {
+  password: string;
+  confirmPassword: string;
+}
+
 export interface GroupStageMatch {
   id: string;
   opponent: Player;
