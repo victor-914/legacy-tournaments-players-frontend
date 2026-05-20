@@ -15,7 +15,7 @@ export enum TournamentStatus {
   Completed = "completed"
 }
 
-export enum MatchStatus {
+export enum SubmissionMatchStatus {
   Scheduled = "scheduled",
   WaitingForSubmission = "waiting_for_submission",
   WaitingForOpponent = "waiting_for_opponent",
@@ -23,6 +23,12 @@ export enum MatchStatus {
   Confirmed = "confirmed",
   Disputed = "disputed"
 }
+
+export type MatchStatus = "pending" | "live" | "completed" | "disputed";
+
+export type GroupMatchStatus = "pending" | "current" | "played";
+
+export type GroupMatchResult = "win" | "loss" | "not_played";
 
 export interface ApiResponse<T> {
   success: boolean;
@@ -71,9 +77,139 @@ export interface Match {
   tournamentName: string;
   groupName: string;
   scheduledAt: string;
-  status: MatchStatus;
+  status: SubmissionMatchStatus;
   playerScore?: number;
   opponentScore?: number;
+}
+
+export interface FindMatch {
+  id: string;
+  opponent: Player;
+  season: string;
+  cycle: string;
+  groupName?: string;
+  status: MatchStatus;
+  scheduledAt?: string;
+}
+
+export interface ScreenshotEvidence {
+  id: string;
+  fileName: string;
+  mimeType: string;
+  uploadedAt: string;
+  previewUrl?: string;
+}
+
+export interface MatchScoreSubmission {
+  id: string;
+  matchId: string;
+  playerId: string;
+  playerName: string;
+  myScore: number;
+  opponentScore: number;
+  evidence: ScreenshotEvidence;
+  submittedAt: string;
+}
+
+export interface MatchMessage {
+  id: string;
+  matchId: string;
+  senderId: string;
+  senderName: string;
+  message: string;
+  createdAt: string;
+}
+
+export interface PastMatch {
+  id: string;
+  opponent: Player;
+  score: string;
+  result: "win" | "loss";
+  status: Extract<MatchStatus, "completed" | "disputed">;
+  date: string;
+}
+
+export interface LiveMatch {
+  id: string;
+  player: Player;
+  opponent: Player;
+  season: string;
+  cycle: string;
+  groupName?: string;
+  status: MatchStatus;
+  roomCode?: string;
+  submissions: MatchScoreSubmission[];
+  winnerId?: string;
+  loserId?: string;
+  scheduledAt?: string;
+}
+
+export type MockLiveMatchStatus = "ready" | "in_progress" | "submitted" | "disputed" | "completed";
+
+export interface MockOpponent {
+  id: string;
+  name: string;
+  rank: string;
+  level: number;
+  winRate: number;
+}
+
+export interface MockLiveMatchMessage {
+  id: string;
+  sender: "player" | "opponent" | "system";
+  senderName: string;
+  message: string;
+  createdAt: string;
+}
+
+export interface MockScoreSubmission {
+  myScore: number;
+  opponentScore: number;
+  submittedAt: string;
+}
+
+export interface MockDisputeScreenshot {
+  fileName: string;
+  previewUrl?: string;
+  uploadedAt: string;
+}
+
+export interface MockActiveLiveMatch {
+  id: string;
+  playerName: string;
+  opponent: MockOpponent;
+  currentUserSide: "A" | "B";
+  status: MockLiveMatchStatus;
+  groupCode?: string;
+  messages: MockLiveMatchMessage[];
+  scoreSubmission?: MockScoreSubmission;
+  opponentSubmission?: MockScoreSubmission;
+  finalScore?: string;
+  result?: "win" | "loss";
+  disputeScreenshot?: MockDisputeScreenshot;
+  createdAt: string;
+}
+
+export interface GroupStageMatch {
+  id: string;
+  opponent: Player;
+  status: GroupMatchStatus;
+  result: GroupMatchResult;
+  scheduledAt?: string;
+  playerScore?: number;
+  opponentScore?: number;
+}
+
+export interface PlayerGroupStage {
+  isAdded: boolean;
+  player: Player;
+  groupName?: string;
+  season?: string;
+  cycle?: string;
+  totalPlayers: number;
+  currentMatch?: GroupStageMatch;
+  matches: GroupStageMatch[];
+  standings: Standing[];
 }
 
 export interface ActivityItem {

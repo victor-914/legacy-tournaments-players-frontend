@@ -34,18 +34,18 @@ export function ProfileView() {
           ["Win Rate", `${data.winRate}%`],
           ["Win Streak", `${data.streak}`],
           ["Season XP", formatNumber(data.xp)],
-          ["Badges", "12"]
+          // ["Badges", "12"]
         ].map(([label, value]) => (
           <Card key={label}><CardBody><MetricLabel>{label}</MetricLabel><MetricValue>{value}</MetricValue></CardBody></Card>
         ))}
       </Grid>
-      <Grid $columns={3}>
+      {/* <Grid $columns={3}>
         {["Cycle Finalist", "Group Slayer", "Verified Streak", "Elite Qualifier", "No Disputes", "XP Surge"].map((badge) => (
           <Card key={badge}><CardBody><Badge label={badge} tone="gold" /></CardBody></Card>
         ))}
-      </Grid>
-      <Card>
-        <CardBody>
+      </Grid> */}
+      {/* <Card> */}
+        {/* <CardBody>
           <SectionTitle>
             <div>
               <h2>Tournament History</h2>
@@ -57,8 +57,8 @@ export function ProfileView() {
               <li key={item}>{item}<Badge label="Verified" tone="green" /></li>
             ))}
           </History>
-        </CardBody>
-      </Card>
+        </CardBody> */}
+      {/* </Card> */}
     </PageStack>
   );
 }

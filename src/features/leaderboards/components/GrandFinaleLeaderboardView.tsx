@@ -23,16 +23,16 @@ export function GrandFinaleLeaderboardView() {
       <Hero>
         <CardBody>
           <Crown size={54} />
-          <h1>Grand Finale Leaderboard</h1>
+          <h1>Championship Leaderboard</h1>
           <p>Season progress is locking elite qualification spots.</p>
           <ProgressBar value={64} label="Season qualification progress" />
         </CardBody>
       </Hero>
-      <Grid $columns={3}>
+      {/* <Grid $columns={3}>
         {data.slice(0, 3).map((standing) => (
           <PlayerCard key={standing.player.id} player={standing.player} highlight rankLabel={`Elite #${standing.rank}`} />
         ))}
-      </Grid>
+      </Grid> */}
       <Card>
         <CardBody>
           <SectionTitle>
