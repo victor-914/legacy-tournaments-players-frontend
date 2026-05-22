@@ -43,7 +43,8 @@ export function LiveMatchView({ matchId }: { matchId: string }) {
         evidence: {
           fileName: screenshot.name,
           mimeType: screenshot.type,
-          previewUrl: screenshotPreview
+          previewUrl: screenshotPreview,
+          file: screenshot
         }
       });
     },

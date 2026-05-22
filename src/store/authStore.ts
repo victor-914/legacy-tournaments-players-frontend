@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { clearStoredAccessToken, storeAccessToken } from "@/services/authService";
 import type { Player } from "@/types/domain";
 
 interface AuthState {
@@ -11,6 +12,12 @@ interface AuthState {
 export const useAuthStore = create<AuthState>((set) => ({
   player: null,
   accessToken: null,
-  setSession: (player, accessToken) => set({ player, accessToken }),
-  clearSession: () => set({ player: null, accessToken: null })
+  setSession: (player, accessToken) => {
+    storeAccessToken(accessToken);
+    set({ player, accessToken });
+  },
+  clearSession: () => {
+    clearStoredAccessToken();
+    set({ player: null, accessToken: null });
+  }
 }));

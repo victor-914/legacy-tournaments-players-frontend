@@ -2,36 +2,42 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useQuery } from "@tanstack/react-query";
 import { CheckCircle2, Radar } from "lucide-react";
 import styled, { keyframes } from "styled-components";
 import { Button } from "@/components/ui/Button";
 import { Card, CardBody } from "@/components/ui/Card";
 import { PageStack } from "@/components/ui/PagePrimitives";
-import { acceptMockMatch, mockFindOpponents } from "@/services/mockLiveMatchService";
-import type { MockOpponent } from "@/types/domain";
+import { mockApi } from "@/services/mockApi";
+import type { FindMatch } from "@/types/domain";
 
 type FindMatchState = "idle" | "searching" | "found";
 
 export function FindMatchView() {
   const router = useRouter();
   const [state, setState] = useState<FindMatchState>("idle");
-  const [opponents, setOpponents] = useState<MockOpponent[]>([]);
+  const [matches, setMatches] = useState<FindMatch[]>([]);
+  const findMatches = useQuery({
+    queryKey: ["find-matches"],
+    queryFn: mockApi.getFindMatches,
+    enabled: false
+  });
 
   function startSearch() {
     setState("searching");
-    setOpponents([]);
+    setMatches([]);
 
     window.setTimeout(() => {
-      void mockFindOpponents().then((items) => {
-        setOpponents(items);
+      void findMatches.refetch().then((result) => {
+        setMatches(result.data ?? []);
         setState("found");
       });
     }, Math.floor(2000 + Math.random() * 2000));
   }
 
-  function acceptOpponent(opponent: MockOpponent) {
-    acceptMockMatch(opponent);
-    router.push("/live-match");
+  async function acceptMatch(match: FindMatch) {
+    await mockApi.startLiveMatch(match.id);
+    router.push(`/matches/${match.id}/live`);
   }
 
   return (
@@ -71,34 +77,41 @@ export function FindMatchView() {
             </div>
           </FoundHeader>
           <OpponentGrid>
-            {opponents.map((opponent) => (
-              <OpponentCard key={opponent.id}>
+            {matches.map((match) => (
+              <OpponentCard key={match.id}>
                 <CardBody>
                   <CardHeader>
                     <div>
                       <span>Ready</span>
-                      <h2>{opponent.name}</h2>
+                      <h2>{match.opponent.gamerTag}</h2>
                     </div>
                     <ReadyPill>Ready</ReadyPill>
                   </CardHeader>
                   <Stats>
                     <Stat>
                       <span>Rank</span>
-                      <strong>{opponent.rank}</strong>
+                      <strong>{match.opponent.rank}</strong>
                     </Stat>
                     <Stat>
                       <span>Level</span>
-                      <strong>{opponent.level}</strong>
+                      <strong>{match.opponent.level}</strong>
                     </Stat>
                     <Stat>
                       <span>Win rate</span>
-                      <strong>{opponent.winRate}%</strong>
+                      <strong>{match.opponent.winRate}%</strong>
                     </Stat>
                   </Stats>
-                  <Button type="button" fullWidth onClick={() => acceptOpponent(opponent)}>Accept</Button>
+                  <Button type="button" fullWidth onClick={() => void acceptMatch(match)}>Accept</Button>
                 </CardBody>
               </OpponentCard>
             ))}
+            {!matches.length ? (
+              <Card>
+                <CardBody>
+                  <p>No available opponents right now.</p>
+                </CardBody>
+              </Card>
+            ) : null}
           </OpponentGrid>
         </PageStack>
       ) : null}

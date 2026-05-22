@@ -199,11 +199,29 @@ export interface RegisterQualificationPayload {
   discordUsername?: string;
   currentXp: number;
   statScreenshot: File | null;
+  statScreenshotUrl?: string;
+  statScreenshotKey?: string;
+  statScreenshotFileName?: string;
 }
 
 export interface RegisterPasswordPayload {
   password: string;
   confirmPassword: string;
+}
+
+export type UserRole = "player" | "admin";
+
+export interface LoginInput {
+  emailAddress: string;
+  password: string;
+}
+
+export interface LoginResponse {
+  accessToken?: string;
+  token?: string;
+  jwt?: string;
+  user?: PlayerMeUser | null;
+  player?: Player | PlayerMePlayer | null;
 }
 
 export interface GroupStageMatch {
@@ -246,4 +264,101 @@ export interface DashboardSummary {
   recentResults: string[];
   standings: Standing[];
   activity: ActivityItem[];
+}
+
+export interface PlayerMeUser {
+  id?: string;
+  fullName?: string;
+  fullname?: string;
+  name?: string;
+  firstName?: string;
+  lastName?: string;
+  avatarUrl?: string;
+}
+
+export interface PlayerMePlayer {
+  id?: string;
+  userId?: string;
+  gameTag?: string;
+  gamerTag?: string;
+  currentXp?: number;
+  xp?: number;
+  approvalStatus?: string;
+  qualificationStatus?: string;
+  progressionStatus?: string;
+  avatarUrl?: string;
+}
+
+export interface PlayerMeSeason {
+  id?: string;
+  name?: string;
+  code?: string;
+  startDate?: string;
+  endDate?: string;
+}
+
+export interface PlayerMeCycle {
+  id?: string;
+  name?: string;
+  number?: number;
+  cycleNumber?: number;
+  code?: string;
+  startDate?: string;
+  endDate?: string;
+}
+
+export interface PlayerMeGroup {
+  id?: string;
+  name?: string;
+  number?: number;
+  groupNumber?: number;
+  currentPlayers?: number;
+  playerCount?: number;
+  maxPlayers?: number;
+  capacity?: number;
+}
+
+export interface PlayerMeMembership {
+  id?: string;
+  status?: string;
+  approvalStatus?: string;
+  qualificationStatus?: string;
+  progressionStatus?: string;
+}
+
+export interface PlayerMeStanding {
+  playerId?: string;
+  userId?: string;
+  rank?: number;
+  currentRank?: number;
+  points?: number;
+  wins?: number;
+  losses?: number;
+  draws?: number;
+  matchesPlayed?: number;
+  scoreDifference?: number;
+  scoreDiff?: number;
+  progressionStatus?: string;
+  qualificationStatus?: string;
+}
+
+export interface PlayerMeDashboard {
+  user?: PlayerMeUser | null;
+  player?: PlayerMePlayer | null;
+  season?: PlayerMeSeason | null;
+  cycle?: PlayerMeCycle | null;
+  group?: PlayerMeGroup | null;
+  membership?: PlayerMeMembership | null;
+  standing?: PlayerMeStanding | null;
+  currentRank?: number | null;
+}
+
+export interface GroupLeaderboardEntry extends PlayerMeStanding {
+  id?: string;
+  player?: PlayerMePlayer | null;
+  user?: PlayerMeUser | null;
+  gameTag?: string;
+  gamerTag?: string;
+  fullName?: string;
+  xp?: number;
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import { ChangeEvent, FormEvent, useMemo, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { CheckCircle2, Trophy, Upload } from "lucide-react";
 import styled from "styled-components";
@@ -49,7 +50,14 @@ export function RegisterView() {
 
   function handleScreenshot(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0] ?? null;
-    updateQualification("statScreenshot", file);
+    setQualification((current) => ({
+      ...current,
+      statScreenshot: file,
+      statScreenshotUrl: undefined,
+      statScreenshotKey: undefined,
+      statScreenshotFileName: undefined
+    }));
+    setError(undefined);
     setScreenshotPreview(file ? URL.createObjectURL(file) : undefined);
   }
 
@@ -65,7 +73,13 @@ export function RegisterView() {
     setError(undefined);
 
     try {
-      await submitQualificationEvidence(qualification);
+      const evidence = await submitQualificationEvidence(qualification);
+      setQualification((current) => ({
+        ...current,
+        statScreenshotUrl: evidence.statScreenshot.url,
+        statScreenshotKey: evidence.statScreenshot.key,
+        statScreenshotFileName: evidence.statScreenshot.fileName
+      }));
       setStep("password");
     } catch (submissionError) {
       setError(submissionError instanceof Error ? submissionError.message : "Unable to submit qualification evidence.");
@@ -88,7 +102,7 @@ export function RegisterView() {
     try {
       await createPlayerAccount(qualification, passwords);
       setStep("success");
-      window.setTimeout(() => router.push("/dashboard"), 1400);
+      window.setTimeout(() => router.push("/login"), 1400);
     } catch (submissionError) {
       setError(submissionError instanceof Error ? submissionError.message : "Unable to create player account.");
     } finally {
@@ -102,7 +116,7 @@ export function RegisterView() {
         <SuccessCard>
           <CheckCircle2 size={34} />
           <h1>Registration successful. Your qualification evidence has been submitted for review.</h1>
-          <p>Redirecting to your player dashboard...</p>
+          <p>Redirecting to login...</p>
         </SuccessCard>
       </RegisterShell>
     );
@@ -115,6 +129,7 @@ export function RegisterView() {
         <div>
           <h1>Ready to compete for the Championship?</h1>
           <p>Submit your player details and stat screenshot to qualify for the current cycle.</p>
+          <LoginLink href="/login">Already approved? Login</LoginLink>
         </div>
       </Hero>
 
@@ -306,6 +321,13 @@ const Hero = styled.section`
     margin: 0.8rem 0 0;
     color: ${({ theme }) => theme.colors.textMuted};
   }
+`;
+
+const LoginLink = styled(Link)`
+  display: inline-flex;
+  margin-top: 0.9rem;
+  color: ${({ theme }) => theme.colors.gold};
+  font-weight: 900;
 `;
 
 const IntroGrid = styled.div`

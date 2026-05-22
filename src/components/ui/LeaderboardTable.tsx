@@ -38,7 +38,7 @@ export function LeaderboardTable({ standings, showQualificationLine = true }: Le
             <td>#{standing.rank}</td>
             <td>
               <PlayerCell>
-                <AvatarImage src={standing.player.avatarUrl} alt={`${standing.player.gamerTag} avatar`} size={32} />
+                {/* <AvatarImage src={standing.player.avatarUrl} alt={`${standing.player.gamerTag} avatar`} size={32} /> */}
                 <span>{standing.player.gamerTag}</span>
               </PlayerCell>
             </td>
@@ -53,7 +53,7 @@ export function LeaderboardTable({ standings, showQualificationLine = true }: Le
         ))}
         {showQualificationLine ? (
           <tr>
-            <LineCell colSpan={7}>TOP 2 QUALIFY</LineCell>
+            <LineCell colSpan={7}>TOP 5 QUALIFY</LineCell>
           </tr>
         ) : null}
       </tbody>

@@ -1,18 +1,7 @@
-import {
-  activity,
-  dashboardSummary,
-  findMatches,
-  liveMatches,
-  matchMessages,
-  pastMatches,
-  playerGroupStage,
-  players,
-  standings,
-  tournaments,
-  upcomingMatch
-} from "@/constants/mockData";
+import { apiClient } from "@/services/apiClient";
 import type {
   ActivityItem,
+  ApiResponse,
   DashboardSummary,
   FindMatch,
   LiveMatch,
@@ -27,153 +16,80 @@ import type {
   Tournament
 } from "@/types/domain";
 
-const latency = 250;
-
-const liveMatchStore = liveMatches.map((match) => ({ ...match, submissions: [...match.submissions] }));
-let messageStore = [...matchMessages];
-
-function resolveMock<T>(data: T): Promise<T> {
-  return new Promise((resolve) => {
-    window.setTimeout(() => resolve(data), latency);
-  });
+function unwrap<T>(response: { data: ApiResponse<T> }): T {
+  return response.data.data;
 }
 
 export const mockApi = {
-  getDashboard(): Promise<DashboardSummary> {
-    return resolveMock(dashboardSummary);
+  async getDashboard(): Promise<DashboardSummary> {
+    return unwrap(await apiClient.get<ApiResponse<DashboardSummary>>("/dashboard"));
   },
-  getTournaments(): Promise<Tournament[]> {
-    return resolveMock(tournaments);
+  async getTournaments(): Promise<Tournament[]> {
+    return unwrap(await apiClient.get<ApiResponse<Tournament[]>>("/tournaments"));
   },
-  getPlayerGroupStage(): Promise<PlayerGroupStage> {
-    return resolveMock(playerGroupStage);
+  async getPlayerGroupStage(): Promise<PlayerGroupStage> {
+    return unwrap(await apiClient.get<ApiResponse<PlayerGroupStage>>("/group-stage/me"));
   },
-  getFindMatches(): Promise<FindMatch[]> {
-    return resolveMock(findMatches);
+  async getFindMatches(): Promise<FindMatch[]> {
+    return unwrap(await apiClient.get<ApiResponse<FindMatch[]>>("/matches/find"));
   },
-  startLiveMatch(matchId: string): Promise<LiveMatch> {
-    const match = liveMatchStore.find((item) => item.id === matchId);
-
-    if (!match) {
-      return Promise.reject(new Error("Match not found"));
-    }
-
-    match.status = match.status === "pending" ? "live" : match.status;
-    return resolveMock({ ...match, submissions: [...match.submissions] });
+  async startLiveMatch(matchId: string): Promise<LiveMatch> {
+    return unwrap(await apiClient.post<ApiResponse<LiveMatch>>(`/matches/${matchId}/start`));
   },
-  getLiveMatch(matchId: string): Promise<LiveMatch> {
-    const match = liveMatchStore.find((item) => item.id === matchId);
-
-    if (!match) {
-      return Promise.reject(new Error("Match not found"));
-    }
-
-    return resolveMock({ ...match, submissions: [...match.submissions] });
+  async getLiveMatch(matchId: string): Promise<LiveMatch> {
+    return unwrap(await apiClient.get<ApiResponse<LiveMatch>>(`/matches/${matchId}/live`));
   },
-  createRoomCode(matchId: string): Promise<string> {
-    const match = liveMatchStore.find((item) => item.id === matchId);
-
-    if (!match) {
-      return Promise.reject(new Error("Match not found"));
-    }
-
-    match.roomCode = match.roomCode ?? `LEG-${matchId.slice(-4).toUpperCase()}-${Math.floor(100 + Math.random() * 900)}`;
-    return resolveMock(match.roomCode);
+  async createRoomCode(matchId: string): Promise<string> {
+    const data = unwrap(await apiClient.post<ApiResponse<{ roomCode: string } | string>>(`/matches/${matchId}/room-code`));
+    return typeof data === "string" ? data : data.roomCode;
   },
-  getMatchMessages(matchId: string): Promise<MatchMessage[]> {
-    return resolveMock(messageStore.filter((message) => message.matchId === matchId));
+  async getMatchMessages(matchId: string): Promise<MatchMessage[]> {
+    return unwrap(await apiClient.get<ApiResponse<MatchMessage[]>>(`/matches/${matchId}/messages`));
   },
-  sendMatchMessage(matchId: string, message: string): Promise<MatchMessage> {
-    const match = liveMatchStore.find((item) => item.id === matchId);
-
-    if (!match) {
-      return Promise.reject(new Error("Match not found"));
-    }
-
-    const nextMessage: MatchMessage = {
-      id: `msg-${Date.now()}`,
-      matchId,
-      senderId: match.player.id,
-      senderName: match.player.gamerTag,
-      message,
-      createdAt: new Date().toISOString()
-    };
-
-    messageStore = [...messageStore, nextMessage];
-    return resolveMock(nextMessage);
+  async sendMatchMessage(matchId: string, message: string): Promise<MatchMessage> {
+    return unwrap(await apiClient.post<ApiResponse<MatchMessage>>(`/matches/${matchId}/messages`, { message }));
   },
-  submitMatchScore(
+  async submitMatchScore(
     matchId: string,
     payload: {
       myScore: number;
       opponentScore: number;
-      evidence: Pick<ScreenshotEvidence, "fileName" | "mimeType" | "previewUrl">;
+      evidence: Pick<ScreenshotEvidence, "fileName" | "mimeType" | "previewUrl"> & { file?: File };
       submitterId?: string;
     }
   ): Promise<LiveMatch> {
-    const match = liveMatchStore.find((item) => item.id === matchId);
-
-    if (!match) {
-      return Promise.reject(new Error("Match not found"));
+    const formData = new FormData();
+    formData.append("myScore", String(payload.myScore));
+    formData.append("opponentScore", String(payload.opponentScore));
+    if (payload.evidence.file) {
+      formData.append("evidence", payload.evidence.file);
     }
 
-    const submitter = payload.submitterId === match.opponent.id ? match.opponent : match.player;
-    const submission: MatchScoreSubmission = {
-      id: `sub-${Date.now()}`,
-      matchId,
-      playerId: submitter.id,
-      playerName: submitter.gamerTag,
-      myScore: payload.myScore,
-      opponentScore: payload.opponentScore,
-      evidence: {
-        id: `evidence-${Date.now()}`,
-        fileName: payload.evidence.fileName,
-        mimeType: payload.evidence.mimeType,
-        previewUrl: payload.evidence.previewUrl,
-        uploadedAt: new Date().toISOString()
-      },
-      submittedAt: new Date().toISOString()
-    };
-
-    const opponentSubmission = match.submissions.find((item) => item.playerId !== submitter.id);
-    match.submissions = [...match.submissions.filter((item) => item.playerId !== submitter.id), submission];
-
-    if (opponentSubmission) {
-      const submissionsMatch =
-        opponentSubmission.myScore === submission.opponentScore &&
-        opponentSubmission.opponentScore === submission.myScore;
-
-      if (submissionsMatch) {
-        match.status = "completed";
-        const opponent = submitter.id === match.player.id ? match.opponent : match.player;
-        match.winnerId = submission.myScore > submission.opponentScore ? submitter.id : opponent.id;
-        match.loserId = submission.myScore > submission.opponentScore ? opponent.id : submitter.id;
-      } else {
-        match.status = "disputed";
-      }
-    }
-
-    return resolveMock({ ...match, submissions: [...match.submissions] });
+    return unwrap(
+      await apiClient.post<ApiResponse<LiveMatch>>(`/matches/${matchId}/submit-score`, formData, {
+        headers: { "Content-Type": "multipart/form-data" }
+      })
+    );
   },
-  getPastMatches(): Promise<PastMatch[]> {
-    return resolveMock(pastMatches);
+  async getPastMatches(): Promise<PastMatch[]> {
+    return unwrap(await apiClient.get<ApiResponse<PastMatch[]>>("/matches/past"));
   },
-  getTournament(id: string): Promise<Tournament> {
-    return resolveMock(tournaments.find((tournament) => tournament.id === id) ?? tournaments[0]);
+  async getTournament(id: string): Promise<Tournament> {
+    return unwrap(await apiClient.get<ApiResponse<Tournament>>(`/tournaments/${id}`));
   },
-  getStandings(): Promise<Standing[]> {
-    return resolveMock(standings);
+  async getStandings(): Promise<Standing[]> {
+    return unwrap(await apiClient.get<ApiResponse<Standing[]>>("/standings"));
   },
-  getLeaderboard(): Promise<Standing[]> {
-    return resolveMock([...standings].sort((a, b) => b.xp - a.xp));
+  async getLeaderboard(): Promise<Standing[]> {
+    return unwrap(await apiClient.get<ApiResponse<Standing[]>>("/leaderboard"));
   },
-  getActivity(): Promise<ActivityItem[]> {
-    return resolveMock(activity);
+  async getActivity(): Promise<ActivityItem[]> {
+    return unwrap(await apiClient.get<ApiResponse<ActivityItem[]>>("/activity"));
   },
-  getMatch(): Promise<Match> {
-    return resolveMock(upcomingMatch);
+  async getMatch(): Promise<Match> {
+    return unwrap(await apiClient.get<ApiResponse<Match>>("/matches/upcoming"));
   },
-  getProfile(): Promise<Player> {
-    return resolveMock(players[0]);
+  async getProfile(): Promise<Player> {
+    return unwrap(await apiClient.get<ApiResponse<Player>>("/auth/me"));
   }
 };

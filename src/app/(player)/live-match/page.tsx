@@ -1,5 +1,5 @@
-import { ActiveLiveMatchView } from "@/features/matches/components/ActiveLiveMatchView";
+import { redirect } from "next/navigation";
 
 export default function LiveMatchPage() {
-  return <ActiveLiveMatchView />;
+  redirect("/find-match");
 }

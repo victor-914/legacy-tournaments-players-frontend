@@ -1,7 +1,10 @@
 import axios from "axios";
 
+const accessTokenKey = "hammer_access_token";
+let isRedirectingToLogin = false;
+
 export const apiClient = axios.create({
-  baseURL: `${process.env.NEXT_PUBLIC_API_URL}/api`,
+  baseURL: `${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5000"}/api`,
   timeout: 15_000,
   headers: {
     "Content-Type": "application/json"
@@ -23,5 +26,21 @@ apiClient.interceptors.request.use((config) => {
 
 apiClient.interceptors.response.use(
   (response) => response,
-  async (error: unknown) => Promise.reject(error)
+  async (error: unknown) => {
+    if (
+      axios.isAxiosError(error) &&
+      error.response?.status === 401 &&
+      typeof window !== "undefined" &&
+      !isRedirectingToLogin
+    ) {
+      isRedirectingToLogin = true;
+      window.localStorage.removeItem(accessTokenKey);
+
+      const currentPath = `${window.location.pathname}${window.location.search}`;
+      const nextPath = currentPath.startsWith("/login") ? "/dashboard" : currentPath;
+      window.location.replace(`/login?next=${encodeURIComponent(nextPath)}`);
+    }
+
+    return Promise.reject(error);
+  }
 );
