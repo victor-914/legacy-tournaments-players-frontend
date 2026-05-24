@@ -22,7 +22,6 @@ function normalizeLeaderboard(payload: GroupLeaderboardEntry[] | { leaderboard?:
 export const playerService = {
   async getMe(): Promise<PlayerMeDashboard> {
     const response = await apiClient.get<ApiEnvelope<PlayerMeDashboard>>("/players/me");
-    console.log("🚀 ~ response:", response)
     return unwrap(response.data);
   },
 

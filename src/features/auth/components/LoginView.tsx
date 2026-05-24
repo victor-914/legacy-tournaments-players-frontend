@@ -3,17 +3,38 @@
 import { FormEvent, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { LockKeyhole, Mail, ShieldCheck } from "lucide-react";
+import { AlertTriangle, LockKeyhole, Mail, ShieldCheck } from "lucide-react";
 import styled from "styled-components";
 import { Button } from "@/components/ui/Button";
 import { Card, CardBody } from "@/components/ui/Card";
-import { authService, readStoredAccessToken } from "@/services/authService";
+import { LoginError, authService, readStoredAccessToken } from "@/services/authService";
 import type { LoginInput } from "@/types/domain";
 
 const initialLogin: LoginInput = {
   emailAddress: "",
   password: ""
 };
+
+function getLoginErrorMessage(error: unknown) {
+  if (!(error instanceof LoginError)) {
+    return "We could not reach the server. Please try again.";
+  }
+
+  switch (error.code) {
+    case "USER_NOT_FOUND":
+      return "No account exists for this email address.";
+    case "WRONG_PASSWORD":
+      return "The password you entered is incorrect.";
+    case "PLAYER_NOT_APPROVED":
+      return "Your player account is not yet approved.";
+    case "ROLE_NOT_ALLOWED":
+      return "This account cannot log in here.";
+    case "VALIDATION_ERROR":
+      return error.message || "Email and password are required.";
+    case "SERVER_ERROR":
+      return "We could not reach the server. Please try again.";
+  }
+}
 
 export function LoginView() {
   const router = useRouter();
@@ -51,7 +72,7 @@ export function LoginView() {
       );
       router.replace(nextPath);
     } catch (loginError) {
-      setError(loginError instanceof Error ? loginError.message : "Unable to log in.");
+      setError(getLoginErrorMessage(loginError));
     } finally {
       setIsSubmitting(false);
     }
@@ -107,7 +128,12 @@ export function LoginView() {
               <Link href="/forgot-password">Forgot password?</Link>
             </MetaRow>
 
-            {error ? <ErrorText>{error}</ErrorText> : null}
+            {error ? (
+              <ErrorPanel role="alert">
+                <AlertTriangle size={18} />
+                <span>{error}</span>
+              </ErrorPanel>
+            ) : null}
 
             <Button type="submit" fullWidth disabled={isSubmitting}>
               {isSubmitting ? "Logging in..." : "Login"}
@@ -217,7 +243,21 @@ const MetaRow = styled.div`
   }
 `;
 
-const ErrorText = styled.p`
-  margin: 0;
+const ErrorPanel = styled.div`
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+  border: 1px solid rgba(255, 59, 48, 0.36);
+  border-radius: 8px;
+  background: rgba(255, 59, 48, 0.1);
+  padding: 0.8rem 0.9rem;
   color: ${({ theme }) => theme.colors.error};
+  font-size: 0.9rem;
+  font-weight: 800;
+  line-height: 1.35;
+
+  svg {
+    flex: 0 0 auto;
+    margin-top: 0.05rem;
+  }
 `;

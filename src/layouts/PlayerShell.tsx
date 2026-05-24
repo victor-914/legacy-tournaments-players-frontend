@@ -1,20 +1,44 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { Bell, Wifi, WifiOff } from "lucide-react";
+import { usePathname, useRouter } from "next/navigation";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { Bell, LogOut, Wifi, WifiOff } from "lucide-react";
 import styled from "styled-components";
 import { playerNavigation } from "@/constants/navigation";
 import { useLiveEvents } from "@/hooks/useLiveEvents";
+import { authService } from "@/services/authService";
+import { playerService } from "@/services/playerService";
+import { socketClient } from "@/socket/socketClient";
+import { useAuthStore } from "@/store/authStore";
 import { useNotificationStore } from "@/store/notificationStore";
 import { useSocketStore } from "@/store/socketStore";
+import type { PlayerMeCycle, PlayerMeSeason } from "@/types/domain";
 
 export function PlayerShell({ children }: { children: React.ReactNode }) {
   useLiveEvents();
   const pathname = usePathname();
+  const router = useRouter();
+  const queryClient = useQueryClient();
+  const clearSession = useAuthStore((state) => state.clearSession);
   const connected = useSocketStore((state) => state.connected);
   const notifications = useNotificationStore((state) => state.notifications);
   const unreadCount = notifications.filter((notification) => !notification.read).length;
+  const playerQuery = useQuery({ queryKey: ["players-me"], queryFn: playerService.getMe });
+  const seasonCycleLabel = getSeasonCycleLabel(playerQuery.isLoading, playerQuery.data?.season, playerQuery.data?.cycle);
+
+  async function logout() {
+    try {
+      await authService.logout();
+    } catch {
+      // Local logout must complete even when the backend logout route is unavailable.
+    } finally {
+      clearSession();
+      socketClient.disconnect();
+      queryClient.clear();
+      router.replace("/login");
+    }
+  }
 
   return (
     <Shell>
@@ -39,7 +63,7 @@ export function PlayerShell({ children }: { children: React.ReactNode }) {
       <Main>
         <Topbar>
           <div>
-            <Kicker>Season 1 / Cycle 7</Kicker>
+            <Kicker>{seasonCycleLabel}</Kicker>
             <h1>Player Arena</h1>
           </div>
           <TopActions>
@@ -51,6 +75,9 @@ export function PlayerShell({ children }: { children: React.ReactNode }) {
               <Bell size={18} />
               {unreadCount > 0 ? <b>{unreadCount}</b> : null}
             </NotificationButton>
+            <IconButton type="button" onClick={() => void logout()} aria-label="Log out" title="Log out">
+              <LogOut size={18} />
+            </IconButton>
           </TopActions>
         </Topbar>
         <Content>{children}</Content>
@@ -65,9 +92,31 @@ export function PlayerShell({ children }: { children: React.ReactNode }) {
             </Link>
           );
         })}
+        <button type="button" onClick={() => void logout()} aria-label="Log out">
+          <LogOut size={21} />
+        </button>
       </MobileNav>
     </Shell>
   );
+}
+
+function getSeasonCycleLabel(isLoading: boolean, season?: PlayerMeSeason | null, cycle?: PlayerMeCycle | null) {
+  if (isLoading) {
+    return "Loading season";
+  }
+
+  if (!season) {
+    return "No active season";
+  }
+
+  const seasonLabel = season.name || season.code || "Active season";
+  if (!cycle) {
+    return `${seasonLabel} / No active cycle`;
+  }
+
+  const cycleNumber = cycle.number ?? cycle.cycleNumber;
+  const cycleLabel = cycle.name || (cycleNumber !== undefined ? `Cycle ${cycleNumber}` : "Active cycle");
+  return `${seasonLabel} / ${cycleLabel}`;
 }
 
 const Shell = styled.div`
@@ -191,7 +240,7 @@ const SocketState = styled.div<{ $connected: boolean }>`
   }
 `;
 
-const NotificationButton = styled.button`
+const IconButton = styled.button`
   position: relative;
   width: 2.5rem;
   height: 2.5rem;
@@ -215,6 +264,8 @@ const NotificationButton = styled.button`
   }
 `;
 
+const NotificationButton = styled(IconButton)``;
+
 const Content = styled.div`
   width: min(100%, 1280px);
   margin: 0 auto;
@@ -236,7 +287,7 @@ const MobileNav = styled.nav`
   right: 0.8rem;
   bottom: 0.75rem;
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: repeat(6, 1fr);
   gap: 0.35rem;
   padding: 0.4rem;
   border: 1px solid ${({ theme }) => theme.colors.border};
@@ -244,12 +295,16 @@ const MobileNav = styled.nav`
   background: rgba(22, 22, 22, 0.86);
   backdrop-filter: blur(18px);
 
-  a {
+  a,
+  button {
     min-height: 2.75rem;
     display: grid;
     place-items: center;
     border-radius: 7px;
+    border: 0;
+    background: transparent;
     color: ${({ theme }) => theme.colors.textMuted};
+    cursor: pointer;
   }
 
   a[data-active="true"] {

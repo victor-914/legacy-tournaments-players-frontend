@@ -2,7 +2,7 @@
 
 import { FormEvent, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Copy, Send } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Clock, Copy, Send } from "lucide-react";
 import styled, { css } from "styled-components";
 import { Button } from "@/components/ui/Button";
 import { Card, CardBody } from "@/components/ui/Card";
@@ -11,7 +11,7 @@ import { PageStack, SectionTitle, TableScroller } from "@/components/ui/PagePrim
 import { UploadDropzone } from "@/components/ui/UploadDropzone";
 import { useMatchChat } from "@/hooks/useMatchChat";
 import { mockApi } from "@/services/mockApi";
-import type { LiveMatch, MatchStatus, PastMatch } from "@/types/domain";
+import type { LiveMatch, MatchScoreSubmission, MatchStatus, PastMatch } from "@/types/domain";
 
 export function LiveMatchView({ matchId }: { matchId: string }) {
   const queryClient = useQueryClient();
@@ -48,8 +48,13 @@ export function LiveMatchView({ matchId }: { matchId: string }) {
         }
       });
     },
-    onSuccess: () => {
+    onSuccess: (updatedMatch) => {
       setFormError(undefined);
+      setScreenshot(null);
+      setScreenshotPreview(undefined);
+      setMyScore("");
+      setOpponentScore("");
+      queryClient.setQueryData(["live-match", matchId], updatedMatch);
       void queryClient.invalidateQueries({ queryKey: ["live-match", matchId] });
     },
     onError: (error) => {
@@ -59,6 +64,10 @@ export function LiveMatchView({ matchId }: { matchId: string }) {
 
   const playerSubmission = useMemo(
     () => matchQuery.data?.submissions.find((submission) => submission.playerId === matchQuery.data?.player.id),
+    [matchQuery.data]
+  );
+  const opponentSubmission = useMemo(
+    () => matchQuery.data?.submissions.find((submission) => submission.playerId === matchQuery.data?.opponent.id),
     [matchQuery.data]
   );
 
@@ -105,45 +114,168 @@ export function LiveMatchView({ matchId }: { matchId: string }) {
     <PageStack>
       <MatchHeader match={match} />
 
-      {match.status === "disputed" ? (
-        <DisputeNotice>This match is disputed. Admin review is required.</DisputeNotice>
-      ) : null}
-
       <ToolsGrid>
         <RoomCodeCard match={match} isCreating={createRoomCode.isPending} onCreate={() => createRoomCode.mutate()} />
         <MatchChat matchId={match.id} />
       </ToolsGrid>
 
-      <Card>
-        <CardBody>
-          <SectionTitle>
-            <div>
-              <h2>Score Submission</h2>
-              <p>Submit your score with screenshot evidence.</p>
-            </div>
-          </SectionTitle>
-          <SubmitForm onSubmit={handleSubmit}>
-            <ScoreGrid>
-              <Field>
-                <span>My Score</span>
-                <input min={0} max={99} type="number" value={myScore} onChange={(event) => setMyScore(event.target.value)} />
-              </Field>
-              <Field>
-                <span>Opponent Score</span>
-                <input min={0} max={99} type="number" value={opponentScore} onChange={(event) => setOpponentScore(event.target.value)} />
-              </Field>
-            </ScoreGrid>
-            <UploadDropzone fileName={screenshot?.name} onChange={handleScreenshot} />
-            {screenshotPreview ? <PreviewImage src={screenshotPreview} alt="Screenshot evidence preview" /> : null}
-            {formError ? <ErrorText>{formError}</ErrorText> : null}
-            {playerSubmission ? <MutedText>Submitted evidence: {playerSubmission.evidence.fileName}</MutedText> : null}
-            <Button type="submit" disabled={submitScore.isPending || match.status === "completed"}>Submit Result</Button>
-          </SubmitForm>
-        </CardBody>
-      </Card>
+      <ScoreSubmissionCard
+        formError={formError}
+        isSubmitting={submitScore.isPending}
+        match={match}
+        myScore={myScore}
+        opponentScore={opponentScore}
+        opponentSubmission={opponentSubmission}
+        playerSubmission={playerSubmission}
+        screenshot={screenshot}
+        screenshotPreview={screenshotPreview}
+        onMyScoreChange={setMyScore}
+        onOpponentScoreChange={setOpponentScore}
+        onScreenshotChange={handleScreenshot}
+        onSubmit={handleSubmit}
+      />
 
       <PastMatchesList matches={pastMatchesQuery.data ?? []} isLoading={pastMatchesQuery.isLoading} />
     </PageStack>
+  );
+}
+
+function ScoreSubmissionCard({
+  formError,
+  isSubmitting,
+  match,
+  myScore,
+  opponentScore,
+  opponentSubmission,
+  playerSubmission,
+  screenshot,
+  screenshotPreview,
+  onMyScoreChange,
+  onOpponentScoreChange,
+  onScreenshotChange,
+  onSubmit
+}: {
+  formError?: string;
+  isSubmitting: boolean;
+  match: LiveMatch;
+  myScore: string;
+  opponentScore: string;
+  opponentSubmission?: MatchScoreSubmission;
+  playerSubmission?: MatchScoreSubmission;
+  screenshot: File | null;
+  screenshotPreview?: string;
+  onMyScoreChange: (value: string) => void;
+  onOpponentScoreChange: (value: string) => void;
+  onScreenshotChange: (file: File | null) => void;
+  onSubmit: (event: FormEvent<HTMLFormElement>) => void;
+}) {
+  const hasPlayerSubmission = Boolean(playerSubmission);
+  const canSubmit = !hasPlayerSubmission && match.status !== "completed" && match.status !== "disputed";
+
+  return (
+    <Card>
+      <CardBody>
+        <SectionTitle>
+          <div>
+            <h2>Score Submission</h2>
+            <p>Both players enter their own score and opponent score. Matching submissions verify automatically; conflicting submissions go to admin review.</p>
+          </div>
+        </SectionTitle>
+
+        {match.status === "completed" ? (
+          <ResultState $tone="success">
+            <CheckCircle2 size={22} />
+            <div>
+              <h3>Match completed</h3>
+              <p>Final score: <strong>{formatFinalScore(match, playerSubmission, opponentSubmission)}</strong></p>
+            </div>
+          </ResultState>
+        ) : null}
+
+        {match.status === "disputed" ? (
+          <ResultState $tone="danger">
+            <AlertTriangle size={22} />
+            <div>
+              <h3>Admin review required</h3>
+              <p>Your submission conflicts with the opponent submission. Further score submission is disabled while the dispute is reviewed.</p>
+            </div>
+          </ResultState>
+        ) : null}
+
+        {hasPlayerSubmission && match.status !== "completed" && match.status !== "disputed" ? (
+          <ResultState $tone="pending">
+            <Clock size={22} />
+            <div>
+              <h3>Waiting for opponent submission</h3>
+              <p>Your score is saved. The match completes automatically if both submissions tally.</p>
+            </div>
+          </ResultState>
+        ) : null}
+
+        {playerSubmission ? (
+          <SubmissionDetails title="Your submitted score" submission={playerSubmission} myLabel="My Score" opponentLabel="Opponent Score" />
+        ) : null}
+
+        {match.status === "disputed" && opponentSubmission ? (
+          <SubmissionDetails
+            title="Opponent submitted score"
+            submission={opponentSubmission}
+            myLabel={`${match.opponent.gamerTag} Score`}
+            opponentLabel={`${match.player.gamerTag} Score`}
+            showEvidence={false}
+          />
+        ) : null}
+
+        {canSubmit ? (
+          <SubmitForm onSubmit={onSubmit}>
+            <ScoreGrid>
+              <Field>
+                <span>My Score</span>
+                <input min={0} max={99} type="number" value={myScore} onChange={(event) => onMyScoreChange(event.target.value)} />
+              </Field>
+              <Field>
+                <span>Opponent Score</span>
+                <input min={0} max={99} type="number" value={opponentScore} onChange={(event) => onOpponentScoreChange(event.target.value)} />
+              </Field>
+            </ScoreGrid>
+            <UploadDropzone fileName={screenshot?.name} onChange={onScreenshotChange} />
+            {screenshotPreview ? <PreviewImage src={screenshotPreview} alt="Screenshot evidence preview" /> : null}
+            {formError ? <ErrorText>{formError}</ErrorText> : null}
+            <Button type="submit" disabled={isSubmitting}>Submit Result</Button>
+          </SubmitForm>
+        ) : null}
+      </CardBody>
+    </Card>
+  );
+}
+
+function SubmissionDetails({
+  myLabel,
+  opponentLabel,
+  showEvidence = true,
+  submission,
+  title
+}: {
+  myLabel: string;
+  opponentLabel: string;
+  showEvidence?: boolean;
+  submission: MatchScoreSubmission;
+  title: string;
+}) {
+  return (
+    <SubmissionPanel>
+      <h3>{title}</h3>
+      <ScoreSummary>
+        <span>{myLabel}: <strong>{submission.myScore}</strong></span>
+        <span>{opponentLabel}: <strong>{submission.opponentScore}</strong></span>
+      </ScoreSummary>
+      {showEvidence ? (
+        <EvidenceLine>
+          Evidence: <strong>{getEvidenceLabel(submission.evidence)}</strong>
+          {getEvidenceUrl(submission.evidence) ? <EvidenceLink href={getEvidenceUrl(submission.evidence)} target="_blank" rel="noreferrer">View screenshot</EvidenceLink> : null}
+        </EvidenceLine>
+      ) : null}
+    </SubmissionPanel>
   );
 }
 
@@ -286,6 +418,55 @@ function formatStatus(status: MatchStatus | "win" | "loss"): string {
   return status.charAt(0).toUpperCase() + status.slice(1);
 }
 
+function formatFinalScore(match: LiveMatch, playerSubmission?: MatchScoreSubmission, opponentSubmission?: MatchScoreSubmission): string {
+  const resolvedScore = getResolvedScore(match);
+  if (resolvedScore) {
+    return resolvedScore;
+  }
+
+  if (playerSubmission) {
+    return `${playerSubmission.myScore}-${playerSubmission.opponentScore}`;
+  }
+
+  if (opponentSubmission) {
+    return `${opponentSubmission.opponentScore}-${opponentSubmission.myScore}`;
+  }
+
+  if (match.winnerId && match.loserId) {
+    return "Verified";
+  }
+
+  return "Completed";
+}
+
+function getResolvedScore(match: LiveMatch): string | undefined {
+  if (typeof match.playerOneScore !== "number" || typeof match.playerTwoScore !== "number") {
+    return undefined;
+  }
+
+  if (match.playerOneId === match.player.id) {
+    return `${match.playerOneScore}-${match.playerTwoScore}`;
+  }
+
+  if (match.playerTwoId === match.player.id) {
+    return `${match.playerTwoScore}-${match.playerOneScore}`;
+  }
+
+  return `${match.playerOneScore}-${match.playerTwoScore}`;
+}
+
+function getEvidenceLabel(evidence: MatchScoreSubmission["evidence"]): string {
+  if (typeof evidence === "string") {
+    return evidence.split("/").pop() ?? "Screenshot uploaded";
+  }
+
+  return evidence.fileName;
+}
+
+function getEvidenceUrl(evidence: MatchScoreSubmission["evidence"]): string | undefined {
+  return typeof evidence === "string" ? evidence : evidence.previewUrl;
+}
+
 function formatTime(value: string): string {
   return new Intl.DateTimeFormat("en-US", { hour: "numeric", minute: "2-digit" }).format(new Date(value));
 }
@@ -372,15 +553,6 @@ const StatusPill = styled.span<{ $status: MatchStatus }>`
     `}
 `;
 
-const DisputeNotice = styled.div`
-  border: 1px solid rgba(255, 59, 48, 0.5);
-  border-radius: 8px;
-  padding: 1rem;
-  background: rgba(255, 59, 48, 0.12);
-  color: ${({ theme }) => theme.colors.error};
-  font-weight: 800;
-`;
-
 const RoomCode = styled.div`
   display: flex;
   flex-wrap: wrap;
@@ -447,7 +619,84 @@ const ChatForm = styled.form`
 const SubmitForm = styled.form`
   display: grid;
   gap: 1rem;
+  margin-top: 1rem;
   padding-bottom: calc(0.5rem + env(safe-area-inset-bottom));
+`;
+
+const ResultState = styled.div<{ $tone: "success" | "danger" | "pending" }>`
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.75rem;
+  align-items: start;
+  border: 1px solid ${({ $tone, theme }) => {
+    if ($tone === "success") return "rgba(0, 200, 83, 0.42)";
+    if ($tone === "danger") return "rgba(255, 59, 48, 0.5)";
+    return theme.colors.borderStrong;
+  }};
+  border-radius: 8px;
+  background: ${({ $tone, theme }) => {
+    if ($tone === "success") return "rgba(0, 200, 83, 0.12)";
+    if ($tone === "danger") return "rgba(255, 59, 48, 0.12)";
+    return theme.colors.goldSoft;
+  }};
+  padding: 1rem;
+
+  svg {
+    color: ${({ $tone, theme }) => {
+      if ($tone === "success") return theme.colors.success;
+      if ($tone === "danger") return theme.colors.error;
+      return theme.colors.gold;
+    }};
+  }
+
+  h3,
+  p {
+    margin: 0;
+  }
+
+  h3 {
+    font-size: 1rem;
+  }
+
+  p {
+    margin-top: 0.25rem;
+    color: ${({ theme }) => theme.colors.textMuted};
+  }
+`;
+
+const SubmissionPanel = styled.div`
+  display: grid;
+  gap: 0.65rem;
+  margin-top: 1rem;
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  border-radius: 8px;
+  background: ${({ theme }) => theme.colors.surfaceGlass};
+  padding: 1rem;
+
+  h3 {
+    margin: 0;
+    font-size: 1rem;
+  }
+`;
+
+const ScoreSummary = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem 1rem;
+  color: ${({ theme }) => theme.colors.textMuted};
+`;
+
+const EvidenceLine = styled.p`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 0.75rem;
+  margin: 0;
+  color: ${({ theme }) => theme.colors.textMuted};
+`;
+
+const EvidenceLink = styled.a`
+  color: ${({ theme }) => theme.colors.gold};
+  font-weight: 800;
 `;
 
 const ScoreGrid = styled.div`

@@ -1,69 +1,257 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useQuery } from "@tanstack/react-query";
-import { CheckCircle2, Radar } from "lucide-react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import type { Socket } from "socket.io-client";
+import { AlertCircle, CheckCircle2, Radar, XCircle } from "lucide-react";
 import styled, { keyframes } from "styled-components";
 import { Button } from "@/components/ui/Button";
 import { Card, CardBody } from "@/components/ui/Card";
 import { PageStack } from "@/components/ui/PagePrimitives";
 import { mockApi } from "@/services/mockApi";
+import { socketClient } from "@/socket/socketClient";
 import type { FindMatch } from "@/types/domain";
 
-type FindMatchState = "idle" | "searching" | "found";
+type FindMatchState = "idle" | "connecting" | "searching" | "found" | "error";
+type MatchmakingAck = {
+  success?: boolean;
+  error?: string;
+  message?: string;
+  code?: string;
+  data?: {
+    matchId?: string | null;
+    playerId?: string;
+    cycleId?: string;
+  };
+};
+type MatchFoundPayload = {
+  matchId?: string;
+  match?: { id?: string };
+};
+
+function getMatchmakingMessage(response?: MatchmakingAck): string {
+  if (response?.message) {
+    return response.message;
+  }
+
+  switch (response?.code) {
+    case "WAITING_FOR_OPPONENT":
+      return "You are in the queue. Waiting for another eligible player.";
+    case "PAIR_ALREADY_MATCHED":
+      return "The available player is already assigned to you in this cycle. Waiting for a different opponent.";
+    case "OPPONENT_NOT_ELIGIBLE":
+      return "The available player is not eligible for a new match right now. Waiting for another opponent.";
+    case "NO_ELIGIBLE_OPPONENT":
+      return "No eligible opponent is available yet. Keep searching.";
+    case "LOCK_BUSY":
+      return "Matchmaking is already processing this request. Please wait.";
+    case "MATCH_CREATE_FAILED":
+      return "A match was found, but the server could not create it.";
+    case "FIND_MATCH_FAILED":
+      return "Could not start matchmaking.";
+    default:
+      return "Searching for an eligible opponent.";
+  }
+}
 
 export function FindMatchView() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const [state, setState] = useState<FindMatchState>("idle");
   const [matches, setMatches] = useState<FindMatch[]>([]);
+  const [failureMessage, setFailureMessage] = useState<string | null>(null);
+  const [searchMessage, setSearchMessage] = useState("Scanning active Legacy players");
+  const socketRef = useRef<Socket | null>(null);
   const findMatches = useQuery({
     queryKey: ["find-matches"],
     queryFn: mockApi.getFindMatches,
     enabled: false
   });
+  const refetchFindMatchesRef = useRef(findMatches.refetch);
+
+  useEffect(() => {
+    refetchFindMatchesRef.current = findMatches.refetch;
+  }, [findMatches.refetch]);
+
+  const refreshMatchQueries = useCallback(() => {
+    void queryClient.invalidateQueries({ queryKey: ["find-matches"] });
+    void queryClient.invalidateQueries({ queryKey: ["player-group-stage"] });
+    void queryClient.invalidateQueries({ queryKey: ["players-me"] });
+  }, [queryClient]);
+
+  const loadFoundMatches = useCallback(async (payload?: MatchFoundPayload) => {
+    console.log("[matchmaking:client] matchFound event received", payload);
+    refreshMatchQueries();
+
+    const matchId = payload?.matchId ?? payload?.match?.id;
+    if (matchId) {
+      console.log("[matchmaking:client] navigating to live match from matchFound", { matchId });
+      router.push(`/matches/${matchId}/live`);
+      return;
+    }
+
+    try {
+      console.log("[matchmaking:client] refetching find-matches after matchFound");
+      const result = await refetchFindMatchesRef.current();
+      if (result.isError) {
+        console.log("[matchmaking:client] find-matches refetch failed after matchFound", {
+          error: result.error
+        });
+        setFailureMessage("Match found, but match details could not be loaded.");
+        setState("error");
+        return;
+      }
+
+      console.log("[matchmaking:client] find-matches refetch complete", {
+        count: result.data?.length ?? 0,
+        matches: result.data
+      });
+      setMatches(result.data ?? []);
+      setState("found");
+    } catch (error) {
+      console.log("[matchmaking:client] find-matches refetch threw after matchFound", { error });
+      setFailureMessage("Match found, but match details could not be loaded.");
+      setState("error");
+    }
+  }, [refreshMatchQueries, router]);
+
+  const handleSearching = useCallback(() => {
+    console.log("[matchmaking:client] matchmakingSearching event received");
+    setSearchMessage("Scanning active Legacy players");
+    setState("searching");
+  }, []);
+
+  const handleCancelled = useCallback(() => {
+    console.log("[matchmaking:client] matchmakingCancelled event received");
+    setFailureMessage(null);
+    setSearchMessage("Scanning active Legacy players");
+    setMatches([]);
+    setState("idle");
+  }, []);
+
+  const handleSocketError = useCallback((payload?: { message?: string; error?: string } | string) => {
+    console.log("[matchmaking:client] socketError event received", payload);
+    const message = typeof payload === "string" ? payload : payload?.message ?? payload?.error;
+    setFailureMessage(message ?? "Matchmaking failed. Please try again.");
+    setState("error");
+  }, []);
+
+  const detachMatchmakingListeners = useCallback((socket: Socket) => {
+    socket.off("matchmakingSearching", handleSearching);
+    socket.off("matchmakingCancelled", handleCancelled);
+    socket.off("matchFound", loadFoundMatches);
+    socket.off("socketError", handleSocketError);
+  }, [handleCancelled, handleSearching, handleSocketError, loadFoundMatches]);
+
+  const attachMatchmakingListeners = useCallback((socket: Socket) => {
+    detachMatchmakingListeners(socket);
+    socket.on("matchmakingSearching", handleSearching);
+    socket.on("matchmakingCancelled", handleCancelled);
+    socket.on("matchFound", loadFoundMatches);
+    socket.on("socketError", handleSocketError);
+  }, [detachMatchmakingListeners, handleCancelled, handleSearching, handleSocketError, loadFoundMatches]);
+
+  useEffect(() => {
+    return () => {
+      if (socketRef.current) {
+        detachMatchmakingListeners(socketRef.current);
+      }
+    };
+  }, [detachMatchmakingListeners]);
 
   function startSearch() {
-    setState("searching");
-    setMatches([]);
+    const socket = socketClient.connect();
+    socketRef.current = socket;
+    attachMatchmakingListeners(socket);
 
-    window.setTimeout(() => {
-      void findMatches.refetch().then((result) => {
-        setMatches(result.data ?? []);
-        setState("found");
+    console.log("[matchmaking:client] findMatch emit starting", {
+      socketId: socket.id,
+      connected: socket.connected
+    });
+
+    setFailureMessage(null);
+    setSearchMessage("Contacting matchmaking server");
+    setMatches([]);
+    setState("connecting");
+
+    socket.timeout(8_000).emit("findMatch", {}, (error: Error | null, response?: MatchmakingAck) => {
+      console.log("[matchmaking:client] findMatch ack received", {
+        timedOut: Boolean(error),
+        error,
+        response,
+        socketId: socket.id,
+        connected: socket.connected
       });
-    }, Math.floor(2000 + Math.random() * 2000));
+
+      if (error) {
+        setFailureMessage("Matchmaking server did not acknowledge your request. Check the socket server and try again.");
+        setState("error");
+        return;
+      }
+
+      if (response?.success === false) {
+        setFailureMessage(response.error ?? getMatchmakingMessage(response));
+        setState("error");
+        return;
+      }
+
+      const matchId = response?.data?.matchId;
+      if (matchId) {
+        router.push(`/matches/${matchId}/live`);
+        return;
+      }
+
+      setSearchMessage(getMatchmakingMessage(response));
+      setState("searching");
+    });
   }
 
-  async function acceptMatch(match: FindMatch) {
-    await mockApi.startLiveMatch(match.id);
+  function cancelSearch() {
+    const socket = socketRef.current;
+    if (socket) {
+      console.log("[matchmaking:client] cancelFindMatch emit", {
+        socketId: socket.id,
+        connected: socket.connected
+      });
+      socket.emit("cancelFindMatch");
+    }
+
+    handleCancelled();
+  }
+
+  function acceptMatch(match: FindMatch) {
     router.push(`/matches/${match.id}/live`);
   }
 
   return (
     <FindMatchShell>
-      {state === "idle" ? (
+      {state === "idle" || state === "error" ? (
         <CenterStage>
           <RadarButton type="button" onClick={startSearch} aria-label="Find Match">
             <RadarSweep />
-            <Radar size={46} />
-            <strong>Find Match</strong>
+            {state === "error" ? <AlertCircle size={46} /> : <Radar size={46} />}
+            <strong>{state === "error" ? "Try Again" : "Find Match"}</strong>
           </RadarButton>
-          <h1>Find Match</h1>
-          <p>Search for your next opponent</p>
+          <h1>{state === "error" ? "Search Failed" : "Find Match"}</h1>
+          <p>{state === "error" ? failureMessage : "Search for your next opponent"}</p>
         </CenterStage>
       ) : null}
 
-      {state === "searching" ? (
+      {state === "connecting" || state === "searching" ? (
         <CenterStage>
           <RadarButton type="button" disabled aria-label="Searching for opponent">
             <RadarSweep $active />
             <PulseRing />
             <Radar size={46} />
-            <strong>Searching</strong>
+            <strong>{state === "connecting" ? "Finding" : "Searching"}</strong>
           </RadarButton>
-          <h1>Searching for opponent...</h1>
-          <p>Scanning active Legacy players</p>
+          <h1>{state === "connecting" ? "Starting search..." : "Searching for opponent..."}</h1>
+          <p>{state === "connecting" ? "Contacting matchmaking server" : searchMessage}</p>
+          <CancelButton type="button" onClick={cancelSearch}>
+            <XCircle size={18} />
+            Cancel
+          </CancelButton>
         </CenterStage>
       ) : null}
 
@@ -101,7 +289,7 @@ export function FindMatchView() {
                       <strong>{match.opponent.winRate}%</strong>
                     </Stat>
                   </Stats>
-                  <Button type="button" fullWidth onClick={() => void acceptMatch(match)}>Accept</Button>
+                  <Button type="button" fullWidth onClick={() => void acceptMatch(match)}>Open Match</Button>
                 </CardBody>
               </OpponentCard>
             ))}
@@ -208,6 +396,12 @@ const RadarSweep = styled.span<{ $active?: boolean }>`
   background: conic-gradient(from 0deg, rgba(212, 175, 55, 0.42), transparent 26%, transparent);
   opacity: 0.7;
   animation: ${sweep} ${({ $active }) => ($active ? "1.15s" : "3.5s")} linear infinite;
+`;
+
+const CancelButton = styled(Button)`
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
 `;
 
 const PulseRing = styled.span`

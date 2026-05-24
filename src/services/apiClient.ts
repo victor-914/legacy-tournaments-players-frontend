@@ -31,6 +31,7 @@ apiClient.interceptors.response.use(
       axios.isAxiosError(error) &&
       error.response?.status === 401 &&
       typeof window !== "undefined" &&
+      !window.location.pathname.startsWith("/login") &&
       !isRedirectingToLogin
     ) {
       isRedirectingToLogin = true;

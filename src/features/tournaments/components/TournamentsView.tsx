@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
+import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import styled, { css } from "styled-components";
 import { Card, CardBody } from "@/components/ui/Card";
@@ -170,6 +171,7 @@ function CurrentMatchCard({ match }: { match?: GroupStageMatch }) {
             <strong>{formatScore(match)}</strong>
           </DetailRow>
         </DetailList>
+        {isPlayableMatch(match.status) ? <MatchLink href={`/matches/${match.id}/live`}>Play Match</MatchLink> : null}
       </CardBody>
     </HighlightedCard>
   );
@@ -223,6 +225,7 @@ function GroupMatchesList({ matches }: { matches: GroupStageMatch[] }) {
                   <th>Status</th>
                   <th>Result</th>
                   <th>Score</th>
+                  <th>Action</th>
                 </tr>
               </thead>
               <tbody>
@@ -232,6 +235,13 @@ function GroupMatchesList({ matches }: { matches: GroupStageMatch[] }) {
                     <td><StatusPill $tone={match.status === "current" ? "gold" : "muted"}>{formatMatchStatus(match.status)}</StatusPill></td>
                     <td>{formatMatchResult(match.result)}</td>
                     <td>{formatScore(match)}</td>
+                    <td>
+                      {isPlayableMatch(match.status) ? (
+                        <TableActionLink href={`/matches/${match.id}/live`}>Open Match</TableActionLink>
+                      ) : (
+                        <MutedAction>Unavailable</MutedAction>
+                      )}
+                    </td>
                   </MatchRow>
                 ))}
               </tbody>
@@ -316,6 +326,10 @@ function formatScore(match: GroupStageMatch): string {
   }
 
   return `${match.playerScore}-${match.opponentScore}`;
+}
+
+function isPlayableMatch(status: GroupMatchStatus): boolean {
+  return status === "pending" || status === "current" || status === "live";
 }
 
 function formatDateTime(value?: string): string {
@@ -421,6 +435,20 @@ const DetailList = styled.div`
   gap: 0.65rem;
 `;
 
+const MatchLink = styled(Link)`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.75rem;
+  margin-top: 1rem;
+  border-radius: 8px;
+  padding: 0 1rem;
+  background: linear-gradient(135deg, ${({ theme }) => theme.colors.gold}, #8d6d16);
+  color: #090909;
+  box-shadow: ${({ theme }) => theme.shadows.glowGold};
+  font-weight: 900;
+`;
+
 const DetailRow = styled.div`
   display: flex;
   justify-content: space-between;
@@ -487,6 +515,25 @@ const Table = styled.table`
     font-size: 0.74rem;
     text-transform: uppercase;
   }
+`;
+
+const TableActionLink = styled(Link)`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.25rem;
+  border: 1px solid ${({ theme }) => theme.colors.borderStrong};
+  border-radius: 8px;
+  padding: 0 0.75rem;
+  color: ${({ theme }) => theme.colors.gold};
+  font-size: 0.78rem;
+  font-weight: 900;
+`;
+
+const MutedAction = styled.span`
+  color: ${({ theme }) => theme.colors.textDim};
+  font-size: 0.78rem;
+  font-weight: 800;
 `;
 
 const MatchRow = styled.tr<{ $current: boolean }>`

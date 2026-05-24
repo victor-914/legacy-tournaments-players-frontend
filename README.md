@@ -24,6 +24,13 @@ npm run dev
 
 ## Environment
 
+Local REST and Socket.IO services use separate origins:
+
+```bash
+NEXT_PUBLIC_API_URL=http://localhost:5000
+NEXT_PUBLIC_SOCKET_URL=http://localhost:4000
+```
+
 Registration screenshot uploads use a server-side Next API route that writes to S3. Configure these variables in `.env.local` or your deployment environment:
 
 ```bash

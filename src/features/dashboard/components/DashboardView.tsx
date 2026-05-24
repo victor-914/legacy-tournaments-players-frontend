@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import styled from "styled-components";
@@ -8,8 +9,9 @@ import { Card, CardBody } from "@/components/ui/Card";
 import { PageLoader } from "@/components/ui/PageLoader";
 import { ProgressBar } from "@/components/ui/ProgressBar";
 import { Grid, PageStack, SectionTitle, TableScroller } from "@/components/ui/PagePrimitives";
+import { mockApi } from "@/services/mockApi";
 import { playerService } from "@/services/playerService";
-import type { GroupLeaderboardEntry, PlayerMeDashboard, PlayerMeStanding } from "@/types/domain";
+import type { FindMatch, GroupLeaderboardEntry, PlayerMeDashboard, PlayerMeStanding } from "@/types/domain";
 import { formatNumber } from "@/utils/format";
 
 type DashboardState =
@@ -22,6 +24,7 @@ type DashboardState =
 
 export function DashboardView() {
   const meQuery = useQuery({ queryKey: ["players-me"], queryFn: playerService.getMe });
+  const findMatchesQuery = useQuery({ queryKey: ["find-matches"], queryFn: mockApi.getFindMatches });
   const groupId = meQuery.data?.group?.id;
   const leaderboardQuery = useQuery({
     enabled: Boolean(groupId),
@@ -55,6 +58,7 @@ export function DashboardView() {
     dashboard.player?.qualificationStatus
   );
   const approvalStatus = getApprovalStatus(dashboard);
+  const currentMatch = findMatchesQuery.data?.find(isActiveMatch);
 
   return (
     <PageStack>
@@ -93,6 +97,8 @@ export function DashboardView() {
           <strong>{formatText(progressionStatus)}</strong>
         </InfoTile>
       </StatsGrid>
+
+      {currentMatch ? <CurrentMatchCard match={currentMatch} /> : null}
 
       <Grid $columns={2}>
         <Card>
@@ -278,6 +284,31 @@ function StateCard({ message, title }: { message: string; title: string }) {
   );
 }
 
+function CurrentMatchCard({ match }: { match: FindMatch }) {
+  return (
+    <CurrentMatchPanel>
+      <CardBody>
+        <CurrentMatchContent>
+          <div>
+            <MatchEyebrow>Current Match</MatchEyebrow>
+            <h2>{match.opponent.gamerTag}</h2>
+            <p>
+              {formatText(match.status)}
+              {" / "}
+              {match.scheduledAt ? formatDateTime(match.scheduledAt) : "Not scheduled"}
+            </p>
+          </div>
+          <MatchAction href={`/matches/${match.id}/live`}>Open Match</MatchAction>
+        </CurrentMatchContent>
+      </CardBody>
+    </CurrentMatchPanel>
+  );
+}
+
+function isActiveMatch(match: FindMatch): boolean {
+  return match.status === "pending" || match.status === "live" || match.status === "current";
+}
+
 function getDashboardState(dashboard: PlayerMeDashboard): DashboardState {
   if (!dashboard.season) return "no_active_season";
   if (!dashboard.cycle) return "no_active_cycle";
@@ -372,6 +403,18 @@ function formatDate(value?: string): string {
   return new Intl.DateTimeFormat("en-US", { day: "numeric", month: "short", year: "numeric" }).format(date);
 }
 
+function formatDateTime(value: string): string {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+
+  return new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit"
+  }).format(date);
+}
+
 const Header = styled.div`
   display: grid;
   gap: 0.7rem;
@@ -387,6 +430,54 @@ const StatusCard = styled(Card)`
   background:
     linear-gradient(135deg, rgba(212, 175, 55, 0.18), rgba(255, 255, 255, 0.03) 44%),
     ${({ theme }) => theme.colors.surfaceElevated};
+`;
+
+const CurrentMatchPanel = styled(Card)`
+  border-color: ${({ theme }) => theme.colors.borderStrong};
+`;
+
+const CurrentMatchContent = styled.div`
+  display: grid;
+  gap: 1rem;
+
+  h2,
+  p {
+    margin: 0;
+  }
+
+  h2 {
+    margin-top: 0.2rem;
+    font-size: 1.35rem;
+  }
+
+  p {
+    color: ${({ theme }) => theme.colors.textMuted};
+  }
+
+  @media (min-width: ${({ theme }) => theme.breakpoints.md}) {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+  }
+`;
+
+const MatchEyebrow = styled.span`
+  color: ${({ theme }) => theme.colors.gold};
+  font-size: 0.74rem;
+  font-weight: 900;
+  text-transform: uppercase;
+`;
+
+const MatchAction = styled(Link)`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.75rem;
+  border-radius: 8px;
+  padding: 0 1rem;
+  background: linear-gradient(135deg, ${({ theme }) => theme.colors.gold}, #8d6d16);
+  color: #090909;
+  box-shadow: ${({ theme }) => theme.shadows.glowGold};
+  font-weight: 900;
 `;
 
 const StatusContent = styled.div`

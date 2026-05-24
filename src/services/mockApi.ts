@@ -7,7 +7,6 @@ import type {
   LiveMatch,
   Match,
   MatchMessage,
-  MatchScoreSubmission,
   PastMatch,
   Player,
   PlayerGroupStage,

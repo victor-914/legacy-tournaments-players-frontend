@@ -24,9 +24,9 @@ export enum SubmissionMatchStatus {
   Disputed = "disputed"
 }
 
-export type MatchStatus = "pending" | "live" | "completed" | "disputed";
+export type MatchStatus = "pending" | "live" | "current" | "completed" | "disputed";
 
-export type GroupMatchStatus = "pending" | "current" | "played";
+export type GroupMatchStatus = "pending" | "current" | "live" | "played";
 
 export type GroupMatchResult = "win" | "loss" | "not_played";
 
@@ -107,7 +107,7 @@ export interface MatchScoreSubmission {
   playerName: string;
   myScore: number;
   opponentScore: number;
-  evidence: ScreenshotEvidence;
+  evidence: ScreenshotEvidence | string;
   submittedAt: string;
 }
 
@@ -139,6 +139,10 @@ export interface LiveMatch {
   status: MatchStatus;
   roomCode?: string;
   submissions: MatchScoreSubmission[];
+  playerOneId?: string;
+  playerTwoId?: string;
+  playerOneScore?: number;
+  playerTwoScore?: number;
   winnerId?: string;
   loserId?: string;
   scheduledAt?: string;
