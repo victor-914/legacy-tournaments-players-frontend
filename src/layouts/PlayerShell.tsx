@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -20,12 +21,16 @@ export function PlayerShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const queryClient = useQueryClient();
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
   const clearSession = useAuthStore((state) => state.clearSession);
   const connected = useSocketStore((state) => state.connected);
   const notifications = useNotificationStore((state) => state.notifications);
+  const markAllRead = useNotificationStore((state) => state.markAllRead);
   const unreadCount = notifications.filter((notification) => !notification.read).length;
   const playerQuery = useQuery({ queryKey: ["players-me"], queryFn: playerService.getMe });
   const seasonCycleLabel = getSeasonCycleLabel(playerQuery.isLoading, playerQuery.data?.season, playerQuery.data?.cycle);
+  const activeNavItem = getActiveNavItem(pathname);
+  const currentScreenLabel = activeNavItem?.label === "Dashboard" ? "Home" : activeNavItem?.label ?? "Player Arena";
 
   async function logout() {
     try {
@@ -64,17 +69,46 @@ export function PlayerShell({ children }: { children: React.ReactNode }) {
         <Topbar>
           <div>
             <Kicker>{seasonCycleLabel}</Kicker>
-            <h1>Player Arena</h1>
+            <h1>{currentScreenLabel}</h1>
           </div>
           <TopActions>
-            <SocketState $connected={connected}>
+            <SocketState $connected={connected} aria-label={connected ? "Socket connected" : "Socket disconnected"} title={connected ? "Socket connected" : "Socket disconnected"}>
               {connected ? <Wifi size={17} /> : <WifiOff size={17} />}
               <span>{connected ? "Live" : "Offline"}</span>
             </SocketState>
-            <NotificationButton aria-label="Notifications">
+            <NotificationButton
+              type="button"
+              aria-label="Notifications"
+              aria-expanded={notificationsOpen}
+              onClick={() => setNotificationsOpen((open) => !open)}
+            >
               <Bell size={18} />
               {unreadCount > 0 ? <b>{unreadCount}</b> : null}
             </NotificationButton>
+            {notificationsOpen ? (
+              <NotificationPanel>
+                <NotificationHeader>
+                  <strong>Notifications</strong>
+                  {unreadCount > 0 ? (
+                    <button type="button" onClick={markAllRead}>
+                      Mark read
+                    </button>
+                  ) : null}
+                </NotificationHeader>
+                {notifications.length > 0 ? (
+                  <NotificationList>
+                    {notifications.slice(0, 5).map((notification) => (
+                      <li key={notification.id} data-read={notification.read}>
+                        <span>{notification.message}</span>
+                        <small>{formatNotificationTime(notification.createdAt)}</small>
+                      </li>
+                    ))}
+                  </NotificationList>
+                ) : (
+                  <EmptyNotifications>No notifications yet</EmptyNotifications>
+                )}
+              </NotificationPanel>
+            ) : null}
             <IconButton type="button" onClick={() => void logout()} aria-label="Log out" title="Log out">
               <LogOut size={18} />
             </IconButton>
@@ -89,6 +123,7 @@ export function PlayerShell({ children }: { children: React.ReactNode }) {
           return (
             <Link key={item.href} href={item.href} data-active={active} aria-label={item.label}>
               <Icon size={21} />
+              <span>{item.label === "Dashboard" ? "Home" : item.label}</span>
             </Link>
           );
         })}
@@ -98,6 +133,10 @@ export function PlayerShell({ children }: { children: React.ReactNode }) {
       </MobileNav>
     </Shell>
   );
+}
+
+function getActiveNavItem(pathname: string) {
+  return playerNavigation.find((item) => pathname === item.href || pathname.startsWith(`${item.href}/`));
 }
 
 function getSeasonCycleLabel(isLoading: boolean, season?: PlayerMeSeason | null, cycle?: PlayerMeCycle | null) {
@@ -117,6 +156,13 @@ function getSeasonCycleLabel(isLoading: boolean, season?: PlayerMeSeason | null,
   const cycleNumber = cycle.number ?? cycle.cycleNumber;
   const cycleLabel = cycle.name || (cycleNumber !== undefined ? `Cycle ${cycleNumber}` : "Active cycle");
   return `${seasonLabel} / ${cycleLabel}`;
+}
+
+function formatNotificationTime(value: Date) {
+  return new Intl.DateTimeFormat("en", {
+    hour: "numeric",
+    minute: "2-digit"
+  }).format(value);
 }
 
 const Shell = styled.div`
@@ -222,21 +268,38 @@ const Kicker = styled.span`
 `;
 
 const TopActions = styled.div`
+  position: relative;
   display: flex;
   align-items: center;
   gap: 0.65rem;
 `;
 
 const SocketState = styled.div<{ $connected: boolean }>`
-  display: none;
+  width: 2.5rem;
+  height: 2.5rem;
+  display: flex;
   align-items: center;
+  justify-content: center;
   gap: 0.4rem;
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  border-radius: 8px;
+  background: ${({ theme }) => theme.colors.surfaceGlass};
   color: ${({ $connected, theme }) => ($connected ? theme.colors.success : theme.colors.textDim)};
   font-size: 0.82rem;
   font-weight: 900;
 
+  span {
+    display: none;
+  }
+
   @media (min-width: ${({ theme }) => theme.breakpoints.md}) {
-    display: flex;
+    width: auto;
+    height: 2.5rem;
+    padding: 0 0.8rem;
+
+    span {
+      display: inline;
+    }
   }
 `;
 
@@ -266,6 +329,79 @@ const IconButton = styled.button`
 
 const NotificationButton = styled(IconButton)``;
 
+const NotificationPanel = styled.div`
+  position: absolute;
+  top: calc(100% + 0.7rem);
+  right: 3.15rem;
+  width: min(20rem, calc(100vw - 2rem));
+  padding: 0.75rem;
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  border-radius: 8px;
+  background: rgba(22, 22, 22, 0.96);
+  box-shadow: ${({ theme }) => theme.shadows.panel};
+  backdrop-filter: blur(18px);
+`;
+
+const NotificationHeader = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.6rem;
+
+  strong {
+    font-size: 0.88rem;
+  }
+
+  button {
+    border: 0;
+    background: transparent;
+    color: ${({ theme }) => theme.colors.gold};
+    font: inherit;
+    font-size: 0.75rem;
+    font-weight: 900;
+    cursor: pointer;
+  }
+`;
+
+const NotificationList = styled.ul`
+  display: grid;
+  gap: 0.45rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+
+  li {
+    display: grid;
+    gap: 0.25rem;
+    padding: 0.65rem;
+    border-radius: 7px;
+    background: ${({ theme }) => theme.colors.surfaceGlass};
+    color: ${({ theme }) => theme.colors.text};
+  }
+
+  li[data-read="false"] {
+    border-left: 3px solid ${({ theme }) => theme.colors.gold};
+  }
+
+  span {
+    font-size: 0.82rem;
+    line-height: 1.35;
+  }
+
+  small {
+    color: ${({ theme }) => theme.colors.textDim};
+    font-size: 0.7rem;
+  }
+`;
+
+const EmptyNotifications = styled.p`
+  margin: 0;
+  padding: 0.9rem 0.65rem;
+  color: ${({ theme }) => theme.colors.textMuted};
+  font-size: 0.82rem;
+`;
+
 const Content = styled.div`
   width: min(100%, 1280px);
   margin: 0 auto;
@@ -287,7 +423,7 @@ const MobileNav = styled.nav`
   right: 0.8rem;
   bottom: 0.75rem;
   display: grid;
-  grid-template-columns: repeat(6, 1fr);
+  grid-template-columns: repeat(7, minmax(0, 1fr));
   gap: 0.35rem;
   padding: 0.4rem;
   border: 1px solid ${({ theme }) => theme.colors.border};
@@ -298,8 +434,10 @@ const MobileNav = styled.nav`
   a,
   button {
     min-height: 2.75rem;
-    display: grid;
-    place-items: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.35rem;
     border-radius: 7px;
     border: 0;
     background: transparent;
@@ -307,9 +445,24 @@ const MobileNav = styled.nav`
     cursor: pointer;
   }
 
+  a span {
+    display: none;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 0.7rem;
+    font-weight: 900;
+  }
+
   a[data-active="true"] {
+    grid-column: span 2;
     color: #0b0b0b;
     background: ${({ theme }) => theme.colors.gold};
+  }
+
+  a[data-active="true"] span {
+    display: inline;
   }
 
   @media (min-width: ${({ theme }) => theme.breakpoints.lg}) {
