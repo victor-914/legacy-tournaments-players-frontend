@@ -1,4 +1,5 @@
 import { apiClient } from "@/services/apiClient";
+import axios from "axios";
 import type {
   ApiResponse,
   Player,
@@ -24,6 +25,24 @@ interface PresignedStatScreenshotUpload {
 
 function unwrap<T>(response: { data: ApiResponse<T> }): T {
   return response.data.data;
+}
+
+function summarizeApiError(error: unknown): string {
+  if (axios.isAxiosError(error)) {
+    const data = error.response?.data;
+    if (data && typeof data === "object" && "message" in data) {
+      const message = (data as { message?: unknown }).message;
+      if (typeof message === "string" && message.trim()) {
+        return message;
+      }
+    }
+  }
+
+  if (error instanceof Error) {
+    return error.message;
+  }
+
+  return "Unable to create player account.";
 }
 
 export async function uploadStatScreenshot(
@@ -89,30 +108,36 @@ export async function createPlayerAccount(
 
   const upload = await ensureUploadedStatScreenshot(qualification);
 
-  const account = unwrap(
-    await apiClient.post<
-      ApiResponse<{ accountId: string; accessToken?: string; player?: Player }>
-    >(
-      "/auth/register",
-      {
-        fullname: qualification.fullName?.trim() || qualification.discordUsername?.trim() || qualification.email.split("@")[0],
-        emailAddress: qualification.email,
-        gameTag: qualification.gameTag?.trim() || qualification.discordUsername?.trim() || qualification.email.split("@")[0],
-        phoneNumber: qualification.phoneNumber?.trim() || "N/A",
-        telegramUsername: qualification.telegramUsername?.trim() || qualification.discordUsername?.trim() || "N/A",
-        discordUsername: qualification.discordUsername?.trim() || "",
-        currentXp: qualification.currentXp ?? 1000,
+  let account: { accountId: string; accessToken?: string; player?: Player };
 
-        password: passwordPayload.password,
-        confirmPassword: passwordPayload.confirmPassword,
+  try {
+    account = unwrap(
+      await apiClient.post<
+        ApiResponse<{ accountId: string; accessToken?: string; player?: Player }>
+      >(
+        "/auth/register",
+        {
+          fullname: qualification.fullName?.trim() || qualification.discordUsername?.trim() || qualification.email.split("@")[0],
+          emailAddress: qualification.email,
+          gameTag: qualification.gameTag?.trim() || qualification.discordUsername?.trim() || qualification.email.split("@")[0],
+          phoneNumber: qualification.phoneNumber?.trim() || "N/A",
+          telegramUsername: qualification.telegramUsername?.trim() || qualification.discordUsername?.trim() || "N/A",
+          discordUsername: qualification.discordUsername?.trim() || "",
+          currentXp: qualification.currentXp ?? 1000,
 
-        statScreenshotUrl: upload.url,
-        statScreenshotKey: upload.key,
-        statScreenshotFileName: upload.fileName,
-        statScreenshotMimeType: upload.mimeType
-      }
-    )
-  );
+          password: passwordPayload.password,
+          confirmPassword: passwordPayload.confirmPassword,
+
+          statScreenshotUrl: upload.url,
+          statScreenshotKey: upload.key,
+          statScreenshotFileName: upload.fileName,
+          statScreenshotMimeType: upload.mimeType
+        }
+      )
+    );
+  } catch (error) {
+    throw new Error(summarizeApiError(error));
+  }
 
   return account;
 }
@@ -136,4 +161,3 @@ async function ensureUploadedStatScreenshot(
 
   return uploadStatScreenshot(payload.statScreenshot);
 }
-

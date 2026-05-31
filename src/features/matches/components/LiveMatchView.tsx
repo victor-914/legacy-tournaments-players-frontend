@@ -26,6 +26,8 @@ export function LiveMatchView({ matchId }: { matchId: string }) {
   const [screenshotPreview, setScreenshotPreview] = useState<string>();
   const [rejectReason, setRejectReason] = useState("");
   const [evidenceNote, setEvidenceNote] = useState("");
+  const [disputeMyScore, setDisputeMyScore] = useState("");
+  const [disputeOpponentScore, setDisputeOpponentScore] = useState("");
   const [formError, setFormError] = useState<string>();
 
   const matchQuery = useQuery({
@@ -44,14 +46,9 @@ export function LiveMatchView({ matchId }: { matchId: string }) {
 
   const submitScore = useMutation({
     mutationFn: () => {
-      if (!screenshot) {
-        throw new Error("Screenshot evidence is required before submitting result.");
-      }
-
       return mockApi.submitMatchScore(matchId, {
         myScore: Number(myScore),
-        opponentScore: Number(opponentScore),
-        evidenceFile: screenshot
+        opponentScore: Number(opponentScore)
       });
     },
     onSuccess: (updatedMatch) => {
@@ -87,10 +84,18 @@ export function LiveMatchView({ matchId }: { matchId: string }) {
     mutationFn: (payload: { disputeId: string; file: File; note?: string }) =>
       mockApi.uploadDisputeEvidence(matchId, payload.disputeId, {
         evidenceFile: payload.file,
-        note: payload.note
+        note: payload.note,
+        ...(playerSubmission
+          ? {}
+          : {
+              myScore: Number(disputeMyScore),
+              opponentScore: Number(disputeOpponentScore)
+            })
       }),
     onSuccess: (updatedMatch) => {
       setEvidenceNote("");
+      setDisputeMyScore("");
+      setDisputeOpponentScore("");
       setScreenshot(null);
       setScreenshotPreview(undefined);
       queryClient.setQueryData(["live-match", matchId], updatedMatch);
@@ -133,7 +138,6 @@ export function LiveMatchView({ matchId }: { matchId: string }) {
   const match = matchQuery.data;
   const resultId = match.resultId ?? playerSubmission?.id ?? opponentSubmission?.id;
   const isLoser = Boolean(match.loserId && match.player.id === match.loserId);
-  const isWinner = Boolean(match.winnerId && match.player.id === match.winnerId);
 
   function handleScreenshot(file: File | null) {
     setScreenshot(file);
@@ -143,11 +147,6 @@ export function LiveMatchView({ matchId }: { matchId: string }) {
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-
-    if (!screenshot) {
-      setFormError("Screenshot evidence is required before submitting result.");
-      return;
-    }
 
     if (myScore === "" || opponentScore === "") {
       setFormError("Enter both scores before submitting.");
@@ -181,11 +180,8 @@ export function LiveMatchView({ matchId }: { matchId: string }) {
         opponentScore={opponentScore}
         opponentSubmission={opponentSubmission}
         playerSubmission={playerSubmission}
-        screenshot={screenshot}
-        screenshotPreview={screenshotPreview}
         onMyScoreChange={setMyScore}
         onOpponentScoreChange={setOpponentScore}
-        onScreenshotChange={handleScreenshot}
         onSubmit={handleSubmit}
       />
 
@@ -228,29 +224,21 @@ export function LiveMatchView({ matchId }: { matchId: string }) {
         </ActionCard>
       ) : null}
 
-      {match.status === "disputed" && isWinner ? (
-        <ActionCard>
-          <CardBody>
-            <SectionTitle>
-              <div>
-                <h2>Dispute Evidence</h2>
-                <p>Upload screenshot evidence for admin review.</p>
-              </div>
-            </SectionTitle>
-            <UploadDropzone fileName={screenshot?.name} onChange={handleScreenshot} />
-            <Field>
-              <span>Note (optional)</span>
-              <input value={evidenceNote} onChange={(event) => setEvidenceNote(event.target.value)} />
-            </Field>
-            <Button
-              type="button"
-              disabled={!screenshot || uploadEvidence.isPending}
-              onClick={() => screenshot && uploadEvidence.mutate({ disputeId: match.id, file: screenshot, note: evidenceNote })}
-            >
-              Submit Evidence
-            </Button>
-          </CardBody>
-        </ActionCard>
+      {match.status === "disputed" ? (
+        <DisputeEvidenceCard
+          disputeMyScore={disputeMyScore}
+          disputeOpponentScore={disputeOpponentScore}
+          evidenceNote={evidenceNote}
+          isSubmitting={uploadEvidence.isPending}
+          playerSubmission={playerSubmission}
+          screenshot={screenshot}
+          screenshotPreview={screenshotPreview}
+          onDisputeMyScoreChange={setDisputeMyScore}
+          onDisputeOpponentScoreChange={setDisputeOpponentScore}
+          onEvidenceNoteChange={setEvidenceNote}
+          onScreenshotChange={handleScreenshot}
+          onSubmit={() => screenshot && uploadEvidence.mutate({ disputeId: match.id, file: screenshot, note: evidenceNote })}
+        />
       ) : null}
 
       <PastMatchesList matches={pastMatchesQuery.data ?? []} isLoading={pastMatchesQuery.isLoading} />
@@ -266,11 +254,8 @@ function ScoreSubmissionCard({
   opponentScore,
   opponentSubmission,
   playerSubmission,
-  screenshot,
-  screenshotPreview,
   onMyScoreChange,
   onOpponentScoreChange,
-  onScreenshotChange,
   onSubmit
 }: {
   formError?: string;
@@ -280,11 +265,8 @@ function ScoreSubmissionCard({
   opponentScore: string;
   opponentSubmission?: MatchScoreSubmission;
   playerSubmission?: MatchScoreSubmission;
-  screenshot: File | null;
-  screenshotPreview?: string;
   onMyScoreChange: (value: string) => void;
   onOpponentScoreChange: (value: string) => void;
-  onScreenshotChange: (file: File | null) => void;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
 }) {
   const hasPlayerSubmission = Boolean(playerSubmission);
@@ -325,7 +307,10 @@ function ScoreSubmissionCard({
           </ResultState>
         ) : null}
 
-        {hasPlayerSubmission && match.status !== "completed" && match.status !== "disputed" ? (
+        {hasPlayerSubmission &&
+        match.status !== "completed" &&
+        match.status !== "disputed" &&
+        match.status !== "pending_admin_approval" ? (
           <ResultState $tone="pending">
             <Clock size={22} />
             <div>
@@ -371,14 +356,77 @@ function ScoreSubmissionCard({
                 <input min={0} max={99} type="number" value={opponentScore} onChange={(event) => onOpponentScoreChange(event.target.value)} />
               </Field>
             </ScoreGrid>
-            <UploadDropzone fileName={screenshot?.name} onChange={onScreenshotChange} />
-            {screenshotPreview ? <PreviewImage src={screenshotPreview} alt="Screenshot evidence preview" /> : null}
             {formError ? <ErrorText>{formError}</ErrorText> : null}
             <Button type="submit" disabled={isSubmitting}>Submit Result</Button>
           </SubmitForm>
         ) : null}
       </CardBody>
     </Card>
+  );
+}
+
+function DisputeEvidenceCard({
+  disputeMyScore,
+  disputeOpponentScore,
+  evidenceNote,
+  isSubmitting,
+  playerSubmission,
+  screenshot,
+  screenshotPreview,
+  onDisputeMyScoreChange,
+  onDisputeOpponentScoreChange,
+  onEvidenceNoteChange,
+  onScreenshotChange,
+  onSubmit
+}: {
+  disputeMyScore: string;
+  disputeOpponentScore: string;
+  evidenceNote: string;
+  isSubmitting: boolean;
+  playerSubmission?: MatchScoreSubmission;
+  screenshot: File | null;
+  screenshotPreview?: string;
+  onDisputeMyScoreChange: (value: string) => void;
+  onDisputeOpponentScoreChange: (value: string) => void;
+  onEvidenceNoteChange: (value: string) => void;
+  onScreenshotChange: (file: File | null) => void;
+  onSubmit: () => void;
+}) {
+  const needsScoreClaim = !playerSubmission;
+  const scoreClaimReady = !needsScoreClaim || (disputeMyScore !== "" && disputeOpponentScore !== "");
+
+  return (
+    <ActionCard>
+      <CardBody>
+        <SectionTitle>
+          <div>
+            <h2>Dispute Evidence</h2>
+            <p>Upload screenshot evidence for admin review.</p>
+          </div>
+        </SectionTitle>
+        {needsScoreClaim ? (
+          <ScoreGrid>
+            <Field>
+              <span>My Corrected Score</span>
+              <input min={0} max={99} type="number" value={disputeMyScore} onChange={(event) => onDisputeMyScoreChange(event.target.value)} />
+            </Field>
+            <Field>
+              <span>Opponent Corrected Score</span>
+              <input min={0} max={99} type="number" value={disputeOpponentScore} onChange={(event) => onDisputeOpponentScoreChange(event.target.value)} />
+            </Field>
+          </ScoreGrid>
+        ) : null}
+        <UploadDropzone fileName={screenshot?.name} onChange={onScreenshotChange} />
+        {screenshotPreview ? <PreviewImage src={screenshotPreview} alt="Screenshot evidence preview" /> : null}
+        <Field>
+          <span>Note (optional)</span>
+          <input value={evidenceNote} onChange={(event) => onEvidenceNoteChange(event.target.value)} />
+        </Field>
+        <Button type="button" disabled={!screenshot || !scoreClaimReady || isSubmitting} onClick={onSubmit}>
+          Submit Evidence
+        </Button>
+      </CardBody>
+    </ActionCard>
   );
 }
 
@@ -548,6 +596,17 @@ function PastMatchesList({ matches, isLoading }: { matches: PastMatch[]; isLoadi
 }
 
 function formatStatus(status: MatchStatus | "win" | "loss"): string {
+  const labels: Partial<Record<MatchStatus | "win" | "loss", string>> = {
+    pending_admin_approval: "Pending admin approval",
+    played: "Awaiting confirmation",
+    win: "Win",
+    loss: "Loss"
+  };
+
+  if (labels[status]) {
+    return labels[status];
+  }
+
   return status.charAt(0).toUpperCase() + status.slice(1);
 }
 
@@ -590,6 +649,9 @@ function getResolvedScore(match: LiveMatch): string | undefined {
 
 function getEvidenceLabel(evidence: MatchScoreSubmission["evidence"]): string {
   if (typeof evidence === "string") {
+    if (evidence === "pending-dispute-evidence") {
+      return "Not uploaded";
+    }
     return evidence.split("/").pop() ?? "Screenshot uploaded";
   }
 
@@ -597,7 +659,11 @@ function getEvidenceLabel(evidence: MatchScoreSubmission["evidence"]): string {
 }
 
 function getEvidenceUrl(evidence: MatchScoreSubmission["evidence"]): string | undefined {
-  return typeof evidence === "string" ? evidence : evidence.previewUrl;
+  if (typeof evidence === "string") {
+    return evidence === "pending-dispute-evidence" ? undefined : evidence;
+  }
+
+  return evidence.previewUrl;
 }
 
 function formatTime(value: string): string {
@@ -665,6 +731,14 @@ const StatusPill = styled.span<{ $status: MatchStatus }>`
 
   ${({ $status, theme }) =>
     $status === "live" &&
+    css`
+      border-color: ${theme.colors.borderStrong};
+      background: ${theme.colors.goldSoft};
+      color: ${theme.colors.gold};
+    `}
+
+  ${({ $status, theme }) =>
+    ($status === "played" || $status === "pending_admin_approval") &&
     css`
       border-color: ${theme.colors.borderStrong};
       background: ${theme.colors.goldSoft};

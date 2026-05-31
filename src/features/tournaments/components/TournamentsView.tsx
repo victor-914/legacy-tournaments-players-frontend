@@ -325,6 +325,16 @@ function getPlayerRecord(matches: GroupStageMatch[]): PlayerRecord {
 }
 
 function formatMatchStatus(status: GroupMatchStatus): string {
+  const labels: Partial<Record<GroupMatchStatus, string>> = {
+    pending_admin_approval: "Pending admin approval",
+    played: "Awaiting confirmation",
+    current: "Current"
+  };
+
+  if (labels[status]) {
+    return labels[status];
+  }
+
   return status.charAt(0).toUpperCase() + status.slice(1);
 }
 

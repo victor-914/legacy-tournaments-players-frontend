@@ -6,6 +6,7 @@ import type {
   FindMatch,
   LiveMatch,
   Match,
+  DisputeEvidencePayload,
   MatchResultRejectPayload,
   MatchResultSubmitPayload,
   MatchMessage,
@@ -75,12 +76,18 @@ export const mockApi = {
   async uploadDisputeEvidence(
     matchId: string,
     disputeId: string,
-    payload: { evidenceFile: File; note?: string }
+    payload: DisputeEvidencePayload
   ): Promise<LiveMatch> {
     const formData = new FormData();
     formData.append("evidence", payload.evidenceFile);
     if (payload.note?.trim()) {
       formData.append("note", payload.note.trim());
+    }
+    if (typeof payload.myScore === "number") {
+      formData.append("myScore", String(payload.myScore));
+    }
+    if (typeof payload.opponentScore === "number") {
+      formData.append("opponentScore", String(payload.opponentScore));
     }
     return unwrap(
       await apiClient.post<ApiResponse<LiveMatch>>(`/matches/${matchId}/disputes/${disputeId}/evidence`, formData, {

@@ -35,7 +35,15 @@ export type MatchStatus =
   | "rejected"
   | "approved";
 
-export type GroupMatchStatus = "pending" | "current" | "live" | "played";
+export type GroupMatchStatus =
+  | "pending"
+  | "current"
+  | "live"
+  | "played"
+  | "pending_admin_approval"
+  | "completed"
+  | "disputed"
+  | "cancelled";
 
 export type GroupMatchResult = "win" | "loss" | "not_played";
 
@@ -374,6 +382,13 @@ export interface MatchResultSubmitPayload {
   myScore: number;
   opponentScore: number;
   evidenceFile?: File | null;
+}
+
+export interface DisputeEvidencePayload {
+  evidenceFile: File;
+  note?: string;
+  myScore?: number;
+  opponentScore?: number;
 }
 
 export interface MatchResultRejectPayload {
