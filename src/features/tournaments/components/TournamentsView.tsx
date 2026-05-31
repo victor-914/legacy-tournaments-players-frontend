@@ -4,11 +4,14 @@ import { useMemo } from "react";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import styled, { css } from "styled-components";
+import { ApprovalNotice } from "@/components/auth/ApprovalNotice";
 import { Card, CardBody } from "@/components/ui/Card";
 import { PageLoader } from "@/components/ui/PageLoader";
 import { PageStack, SectionTitle, TableScroller } from "@/components/ui/PagePrimitives";
 import { mockApi } from "@/services/mockApi";
+import { playerService } from "@/services/playerService";
 import type { GroupMatchResult, GroupMatchStatus, GroupStageMatch, PlayerGroupStage, Standing } from "@/types/domain";
+import { isApprovedPlayer } from "@/utils/approval";
 
 interface PlayerRecord {
   played: number;
@@ -18,16 +21,26 @@ interface PlayerRecord {
 }
 
 export function TournamentsView() {
+  const meQuery = useQuery({ queryKey: ["players-me"], queryFn: playerService.getMe });
+  const approved = isApprovedPlayer(meQuery.data);
   const {
     data,
     isLoading,
     isError
-  } = useQuery({ queryKey: ["player-group-stage"], queryFn: mockApi.getPlayerGroupStage });
+  } = useQuery({ queryKey: ["player-group-stage"], queryFn: mockApi.getPlayerGroupStage, enabled: approved });
 
   const record = useMemo(() => (data ? getPlayerRecord(data.matches) : null), [data]);
 
-  if (isLoading) {
+  if (meQuery.isLoading || isLoading) {
     return <PageLoader label="Loading group stage" />;
+  }
+
+  if (!approved) {
+    return (
+      <PageStack>
+        <ApprovalNotice />
+      </PageStack>
+    );
   }
 
   if (isError) {

@@ -25,8 +25,6 @@ function getLoginErrorMessage(error: unknown) {
       return "No account exists for this email address.";
     case "WRONG_PASSWORD":
       return "The password you entered is incorrect.";
-    case "PLAYER_NOT_APPROVED":
-      return "Your player account is not yet approved.";
     case "ROLE_NOT_ALLOWED":
       return "This account cannot log in here.";
     case "VALIDATION_ERROR":

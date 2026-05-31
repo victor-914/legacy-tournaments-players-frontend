@@ -87,7 +87,6 @@ export function ProfileView() {
               ["Points", String(data.standing?.points ?? 0)],
               ["Wins", String(data.standing?.wins ?? 0)],
               ["Losses", String(data.standing?.losses ?? 0)],
-              ["Draws", String(data.standing?.draws ?? 0)],
               ["Matches Played", String(data.standing?.matchesPlayed ?? getMatchesPlayed(data))],
               ["Score Difference", String(data.standing?.scoreDifference ?? data.standing?.scoreDiff ?? 0)],
               ["Progression Status", formatText(progressionStatus)]
@@ -146,7 +145,7 @@ function formatGroupCapacity(data: PlayerMeDashboard): string {
 }
 
 function getMatchesPlayed(data: PlayerMeDashboard): number {
-  return (data.standing?.wins ?? 0) + (data.standing?.losses ?? 0) + (data.standing?.draws ?? 0);
+  return (data.standing?.wins ?? 0) + (data.standing?.losses ?? 0);
 }
 
 function formatDateRange(startDate?: string, endDate?: string): string {

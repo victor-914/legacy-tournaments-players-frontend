@@ -8,10 +8,13 @@ import { AlertCircle, CheckCircle2, Radar, XCircle } from "lucide-react";
 import styled, { keyframes } from "styled-components";
 import { Button } from "@/components/ui/Button";
 import { Card, CardBody } from "@/components/ui/Card";
+import { ApprovalNotice } from "@/components/auth/ApprovalNotice";
 import { PageStack } from "@/components/ui/PagePrimitives";
 import { mockApi } from "@/services/mockApi";
+import { playerService } from "@/services/playerService";
 import { socketClient } from "@/socket/socketClient";
 import type { FindMatch } from "@/types/domain";
+import { isApprovedPlayer } from "@/utils/approval";
 
 type FindMatchState = "idle" | "connecting" | "searching" | "found" | "error";
 type MatchmakingAck = {
@@ -58,6 +61,8 @@ function getMatchmakingMessage(response?: MatchmakingAck): string {
 export function FindMatchView() {
   const router = useRouter();
   const queryClient = useQueryClient();
+  const meQuery = useQuery({ queryKey: ["players-me"], queryFn: playerService.getMe });
+  const approved = isApprovedPlayer(meQuery.data);
   const [state, setState] = useState<FindMatchState>("idle");
   const [matches, setMatches] = useState<FindMatch[]>([]);
   const [failureMessage, setFailureMessage] = useState<string | null>(null);
@@ -159,6 +164,18 @@ export function FindMatchView() {
       }
     };
   }, [detachMatchmakingListeners]);
+
+  if (meQuery.isLoading) {
+    return <CenterStage><h1>Loading...</h1></CenterStage>;
+  }
+
+  if (!approved) {
+    return (
+      <FindMatchShell>
+        <ApprovalNotice />
+      </FindMatchShell>
+    );
+  }
 
   function startSearch() {
     const socket = socketClient.connect();

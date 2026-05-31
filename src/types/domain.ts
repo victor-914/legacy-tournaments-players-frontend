@@ -24,7 +24,16 @@ export enum SubmissionMatchStatus {
   Disputed = "disputed"
 }
 
-export type MatchStatus = "pending" | "live" | "current" | "completed" | "disputed";
+export type MatchStatus =
+  | "pending"
+  | "live"
+  | "current"
+  | "completed"
+  | "played"
+  | "pending_admin_approval"
+  | "disputed"
+  | "rejected"
+  | "approved";
 
 export type GroupMatchStatus = "pending" | "current" | "live" | "played";
 
@@ -145,6 +154,7 @@ export interface LiveMatch {
   playerTwoScore?: number;
   winnerId?: string;
   loserId?: string;
+  resultId?: string;
   scheduledAt?: string;
 }
 
@@ -195,13 +205,13 @@ export interface MockActiveLiveMatch {
 }
 
 export interface RegisterQualificationPayload {
-  fullName: string;
+  fullName?: string;
   email: string;
-  gameTag: string;
-  phoneNumber: string;
-  telegramUsername: string;
+  gameTag?: string;
+  phoneNumber?: string;
+  telegramUsername?: string;
   discordUsername?: string;
-  currentXp: number;
+  currentXp?: number;
   statScreenshot: File | null;
   statScreenshotUrl?: string;
   statScreenshotKey?: string;
@@ -278,6 +288,9 @@ export interface PlayerMeUser {
   firstName?: string;
   lastName?: string;
   avatarUrl?: string;
+  isApproved?: boolean | string;
+  approvalStatus?: string;
+  status?: string;
 }
 
 export interface PlayerMePlayer {
@@ -355,6 +368,16 @@ export interface PlayerMeDashboard {
   membership?: PlayerMeMembership | null;
   standing?: PlayerMeStanding | null;
   currentRank?: number | null;
+}
+
+export interface MatchResultSubmitPayload {
+  myScore: number;
+  opponentScore: number;
+  evidenceFile?: File | null;
+}
+
+export interface MatchResultRejectPayload {
+  reason: string;
 }
 
 export interface GroupLeaderboardEntry extends PlayerMeStanding {

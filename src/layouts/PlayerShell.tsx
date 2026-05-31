@@ -15,6 +15,7 @@ import { useAuthStore } from "@/store/authStore";
 import { useNotificationStore } from "@/store/notificationStore";
 import { useSocketStore } from "@/store/socketStore";
 import type { PlayerMeCycle, PlayerMeSeason } from "@/types/domain";
+import { isApprovedPlayer } from "@/utils/approval";
 
 export function PlayerShell({ children }: { children: React.ReactNode }) {
   useLiveEvents();
@@ -28,6 +29,7 @@ export function PlayerShell({ children }: { children: React.ReactNode }) {
   const markAllRead = useNotificationStore((state) => state.markAllRead);
   const unreadCount = notifications.filter((notification) => !notification.read).length;
   const playerQuery = useQuery({ queryKey: ["players-me"], queryFn: playerService.getMe });
+  const approved = isApprovedPlayer(playerQuery.data);
   const seasonCycleLabel = getSeasonCycleLabel(playerQuery.isLoading, playerQuery.data?.season, playerQuery.data?.cycle);
   const activeNavItem = getActiveNavItem(pathname);
   const currentScreenLabel = activeNavItem?.label === "Dashboard" ? "Home" : activeNavItem?.label ?? "Player Arena";
@@ -56,8 +58,15 @@ export function PlayerShell({ children }: { children: React.ReactNode }) {
           {playerNavigation.slice(0, 7).map((item) => {
             const Icon = item.icon;
             const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
+            const blocked = !approved && blockedTournamentRoutes.has(item.href);
             return (
-              <Link key={item.href} href={item.href} data-active={active}>
+              <Link
+                key={item.href}
+                href={blocked ? "/dashboard" : item.href}
+                data-active={active}
+                data-disabled={blocked}
+                title={blocked ? "Your account is waiting for admin approval. Tournament actions will be available after approval." : undefined}
+              >
                 <Icon size={18} />
                 <span>{item.label}</span>
               </Link>
@@ -120,8 +129,16 @@ export function PlayerShell({ children }: { children: React.ReactNode }) {
         {playerNavigation.slice(0, 5).map((item) => {
           const Icon = item.icon;
           const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
+          const blocked = !approved && blockedTournamentRoutes.has(item.href);
           return (
-            <Link key={item.href} href={item.href} data-active={active} aria-label={item.label}>
+            <Link
+              key={item.href}
+              href={blocked ? "/dashboard" : item.href}
+              data-active={active}
+              data-disabled={blocked}
+              aria-label={item.label}
+              title={blocked ? "Pending approval" : undefined}
+            >
               <Icon size={21} />
               <span>{item.label === "Dashboard" ? "Home" : item.label}</span>
             </Link>
@@ -164,6 +181,13 @@ function formatNotificationTime(value: Date) {
     minute: "2-digit"
   }).format(value);
 }
+
+const blockedTournamentRoutes = new Set<string>([
+  "/find-match",
+  "/live-match",
+  "/tournaments",
+  "/group-stage"
+]);
 
 const Shell = styled.div`
   min-height: 100vh;
@@ -229,6 +253,10 @@ const Nav = styled.nav`
     color: ${({ theme }) => theme.colors.gold};
     background: ${({ theme }) => theme.colors.goldSoft};
     border-color: ${({ theme }) => theme.colors.borderStrong};
+  }
+
+  a[data-disabled="true"] {
+    opacity: 0.5;
   }
 `;
 
@@ -459,6 +487,10 @@ const MobileNav = styled.nav`
     grid-column: span 2;
     color: #0b0b0b;
     background: ${({ theme }) => theme.colors.gold};
+  }
+
+  a[data-disabled="true"] {
+    opacity: 0.5;
   }
 
   a[data-active="true"] span {

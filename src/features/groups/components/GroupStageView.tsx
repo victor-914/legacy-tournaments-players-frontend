@@ -4,11 +4,14 @@ import { useQuery } from "@tanstack/react-query";
 import { CalendarDays, Clock3, Shield, Trophy } from "lucide-react";
 import styled, { css } from "styled-components";
 import { Card, CardBody } from "@/components/ui/Card";
+import { ApprovalNotice } from "@/components/auth/ApprovalNotice";
 import { LeaderboardTable } from "@/components/ui/LeaderboardTable";
 import { PageLoader } from "@/components/ui/PageLoader";
 import { PageStack, SectionTitle, TableScroller } from "@/components/ui/PagePrimitives";
 import { ProgressBar } from "@/components/ui/ProgressBar";
 import { mockApi } from "@/services/mockApi";
+import { playerService } from "@/services/playerService";
+import { isApprovedPlayer } from "@/utils/approval";
 
 const groupStageStats = [
   { label: "Current Cycle", value: "Cycle 7", helper: "Active weekly run", icon: CalendarDays, tone: "gold" },
@@ -18,10 +21,20 @@ const groupStageStats = [
 ] as const;
 
 export function GroupStageView() {
-  const { data, isLoading } = useQuery({ queryKey: ["standings"], queryFn: mockApi.getStandings });
+  const meQuery = useQuery({ queryKey: ["players-me"], queryFn: playerService.getMe });
+  const approved = isApprovedPlayer(meQuery.data);
+  const { data, isLoading } = useQuery({ queryKey: ["standings"], queryFn: mockApi.getStandings, enabled: approved });
 
-  if (isLoading || !data) {
+  if (meQuery.isLoading || isLoading || (approved && !data)) {
     return <PageLoader label="Loading group stage" />;
+  }
+
+  if (!approved) {
+    return (
+      <PageStack>
+        <ApprovalNotice />
+      </PageStack>
+    );
   }
 
   return (
@@ -56,7 +69,7 @@ export function GroupStageView() {
             </div>
           </SectionTitle>
           <TableScroller>
-            <LeaderboardTable standings={data} />
+            <LeaderboardTable standings={data ?? []} />
           </TableScroller>
         </CardBody>
       </Card>

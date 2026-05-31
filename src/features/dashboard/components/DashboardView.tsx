@@ -12,6 +12,7 @@ import { Grid, PageStack, SectionTitle, TableScroller } from "@/components/ui/Pa
 import { mockApi } from "@/services/mockApi";
 import { playerService } from "@/services/playerService";
 import type { FindMatch, GroupLeaderboardEntry, PlayerMeDashboard, PlayerMeStanding } from "@/types/domain";
+import { isApprovedPlayer } from "@/utils/approval";
 import { formatNumber } from "@/utils/format";
 
 type DashboardState =
@@ -24,7 +25,11 @@ type DashboardState =
 
 export function DashboardView() {
   const meQuery = useQuery({ queryKey: ["players-me"], queryFn: playerService.getMe });
-  const findMatchesQuery = useQuery({ queryKey: ["find-matches"], queryFn: mockApi.getFindMatches });
+  const findMatchesQuery = useQuery({
+    queryKey: ["find-matches"],
+    queryFn: mockApi.getFindMatches,
+    enabled: isApprovedPlayer(meQuery.data)
+  });
   const groupId = meQuery.data?.group?.id;
   const leaderboardQuery = useQuery({
     enabled: Boolean(groupId),
@@ -42,6 +47,7 @@ export function DashboardView() {
 
   const dashboard = meQuery.data;
   const state = getDashboardState(dashboard);
+  const approved = isApprovedPlayer(dashboard);
   const playerId = dashboard.player?.id;
   const userId = dashboard.user?.id;
   const currentStanding = dashboard.standing;
@@ -58,7 +64,7 @@ export function DashboardView() {
     dashboard.player?.qualificationStatus
   );
   const approvalStatus = getApprovalStatus(dashboard);
-  const currentMatch = findMatchesQuery.data?.find(isActiveMatch);
+  const currentMatch = approved ? findMatchesQuery.data?.find(isActiveMatch) : undefined;
 
   return (
     <PageStack>
@@ -173,7 +179,7 @@ export function DashboardView() {
             <SectionTitle>
               <div>
                 <h2>Group Leaderboard</h2>
-                <p>Current group table with your row highlighted.</p>
+              <p>Current group table with your row highlighted.</p>
               </div>
             </SectionTitle>
             {leaderboardQuery.isLoading ? (
@@ -189,7 +195,6 @@ export function DashboardView() {
                       <th>Player</th>
                       <th>W</th>
                       <th>L</th>
-                      <th>D</th>
                       <th>MP</th>
                       <th>SD</th>
                       <th>Pts</th>
@@ -209,7 +214,6 @@ export function DashboardView() {
                           <td>{getLeaderboardName(entry)}</td>
                           <td>{entry.wins ?? 0}</td>
                           <td>{entry.losses ?? 0}</td>
-                          <td>{entry.draws ?? 0}</td>
                           <td>{entry.matchesPlayed ?? getMatchesPlayed(entry)}</td>
                           <td>{entry.scoreDifference ?? entry.scoreDiff ?? 0}</td>
                           <td>{entry.points ?? 0}</td>
@@ -243,7 +247,7 @@ const stateMeta: Record<DashboardState, { badge: string; helper: string; title: 
   },
   pending_approval: {
     badge: "Pending",
-    helper: "Your registration is waiting for admin approval.",
+    helper: "Your account is waiting for admin approval. You will be able to join matches after approval.",
     title: "Pending Approval",
     tone: "gold"
   },
@@ -355,14 +359,13 @@ function getStandingRows(dashboard: PlayerMeDashboard, standing?: PlayerMeStandi
     { label: "Points", value: String(standing?.points ?? 0) },
     { label: "Wins", value: String(standing?.wins ?? 0) },
     { label: "Losses", value: String(standing?.losses ?? 0) },
-    { label: "Draws", value: String(standing?.draws ?? 0) },
     { label: "Matches Played", value: String(standing?.matchesPlayed ?? getMatchesPlayed(standing)) },
     { label: "Score Difference", value: String(standing?.scoreDifference ?? standing?.scoreDiff ?? 0) }
   ];
 }
 
 function getMatchesPlayed(standing?: PlayerMeStanding | null): number {
-  return (standing?.wins ?? 0) + (standing?.losses ?? 0) + (standing?.draws ?? 0);
+  return (standing?.wins ?? 0) + (standing?.losses ?? 0);
 }
 
 function getLeaderboardName(entry: GroupLeaderboardEntry): string {

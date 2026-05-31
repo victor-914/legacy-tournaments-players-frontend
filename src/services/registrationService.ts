@@ -95,13 +95,13 @@ export async function createPlayerAccount(
     >(
       "/auth/register",
       {
-        fullname: qualification.fullName,
+        fullname: qualification.fullName?.trim() || qualification.discordUsername?.trim() || qualification.email.split("@")[0],
         emailAddress: qualification.email,
-        gameTag: qualification.gameTag,
-        phoneNumber: qualification.phoneNumber,
-        telegramUsername: qualification.telegramUsername,
-        discordUsername: qualification.discordUsername ?? "",
-        currentXp: qualification.currentXp,
+        gameTag: qualification.gameTag?.trim() || qualification.discordUsername?.trim() || qualification.email.split("@")[0],
+        phoneNumber: qualification.phoneNumber?.trim() || "N/A",
+        telegramUsername: qualification.telegramUsername?.trim() || qualification.discordUsername?.trim() || "N/A",
+        discordUsername: qualification.discordUsername?.trim() || "",
+        currentXp: qualification.currentXp ?? 1000,
 
         password: passwordPayload.password,
         confirmPassword: passwordPayload.confirmPassword,
@@ -136,5 +136,4 @@ async function ensureUploadedStatScreenshot(
 
   return uploadStatScreenshot(payload.statScreenshot);
 }
-
 

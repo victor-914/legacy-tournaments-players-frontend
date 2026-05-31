@@ -78,6 +78,18 @@ export function useLiveEvents() {
     socket.on("matchCompleted", invalidateMatchQueries);
     socket.on("matchDisputed", handleMatchDisputed);
     socket.on("matchMessageCreated", invalidateMessageQueries);
+    socket.on("match:result_submitted", invalidateMatchQueries);
+    socket.on("match:result_accepted", invalidateMatchQueries);
+    socket.on("match:result_rejected", invalidateMatchQueries);
+    socket.on("match:dispute_opened", handleMatchDisputed);
+    socket.on("match:evidence_uploaded", invalidateMatchQueries);
+    socket.on("match:pending_admin_approval", invalidateMatchQueries);
+    socket.on("match:admin_approved", invalidateMatchQueries);
+    socket.on("match:admin_rejected", invalidateMatchQueries);
+    socket.on("player:approval_updated", () => {
+      void queryClient.invalidateQueries({ queryKey: ["players-me"] });
+      pushNotification("Your approval status has been updated.");
+    });
 
     return () => {
       socket.off("standingsUpdated");
@@ -93,6 +105,15 @@ export function useLiveEvents() {
       socket.off("matchCompleted", invalidateMatchQueries);
       socket.off("matchDisputed", handleMatchDisputed);
       socket.off("matchMessageCreated", invalidateMessageQueries);
+      socket.off("match:result_submitted", invalidateMatchQueries);
+      socket.off("match:result_accepted", invalidateMatchQueries);
+      socket.off("match:result_rejected", invalidateMatchQueries);
+      socket.off("match:dispute_opened", handleMatchDisputed);
+      socket.off("match:evidence_uploaded", invalidateMatchQueries);
+      socket.off("match:pending_admin_approval", invalidateMatchQueries);
+      socket.off("match:admin_approved", invalidateMatchQueries);
+      socket.off("match:admin_rejected", invalidateMatchQueries);
+      socket.off("player:approval_updated");
     };
   }, [pushNotification, queryClient]);
 }

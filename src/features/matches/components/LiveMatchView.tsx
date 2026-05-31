@@ -6,23 +6,34 @@ import { AlertTriangle, CheckCircle2, Clock, Copy, Send } from "lucide-react";
 import styled, { css } from "styled-components";
 import { Button } from "@/components/ui/Button";
 import { Card, CardBody } from "@/components/ui/Card";
+import { ApprovalNotice } from "@/components/auth/ApprovalNotice";
 import { PageLoader } from "@/components/ui/PageLoader";
 import { PageStack, SectionTitle, TableScroller } from "@/components/ui/PagePrimitives";
 import { UploadDropzone } from "@/components/ui/UploadDropzone";
 import { useMatchChat } from "@/hooks/useMatchChat";
 import { mockApi } from "@/services/mockApi";
+import { playerService } from "@/services/playerService";
 import type { LiveMatch, MatchScoreSubmission, MatchStatus, PastMatch } from "@/types/domain";
+import { isApprovedPlayer } from "@/utils/approval";
 
 export function LiveMatchView({ matchId }: { matchId: string }) {
   const queryClient = useQueryClient();
+  const meQuery = useQuery({ queryKey: ["players-me"], queryFn: playerService.getMe });
+  const approved = isApprovedPlayer(meQuery.data);
   const [myScore, setMyScore] = useState("");
   const [opponentScore, setOpponentScore] = useState("");
   const [screenshot, setScreenshot] = useState<File | null>(null);
   const [screenshotPreview, setScreenshotPreview] = useState<string>();
+  const [rejectReason, setRejectReason] = useState("");
+  const [evidenceNote, setEvidenceNote] = useState("");
   const [formError, setFormError] = useState<string>();
 
-  const matchQuery = useQuery({ queryKey: ["live-match", matchId], queryFn: () => mockApi.getLiveMatch(matchId) });
-  const pastMatchesQuery = useQuery({ queryKey: ["past-matches"], queryFn: mockApi.getPastMatches });
+  const matchQuery = useQuery({
+    queryKey: ["live-match", matchId],
+    queryFn: () => mockApi.getLiveMatch(matchId),
+    enabled: approved
+  });
+  const pastMatchesQuery = useQuery({ queryKey: ["past-matches"], queryFn: mockApi.getPastMatches, enabled: approved });
 
   const createRoomCode = useMutation({
     mutationFn: () => mockApi.createRoomCode(matchId),
@@ -40,12 +51,7 @@ export function LiveMatchView({ matchId }: { matchId: string }) {
       return mockApi.submitMatchScore(matchId, {
         myScore: Number(myScore),
         opponentScore: Number(opponentScore),
-        evidence: {
-          fileName: screenshot.name,
-          mimeType: screenshot.type,
-          previewUrl: screenshotPreview,
-          file: screenshot
-        }
+        evidenceFile: screenshot
       });
     },
     onSuccess: (updatedMatch) => {
@@ -61,6 +67,36 @@ export function LiveMatchView({ matchId }: { matchId: string }) {
       setFormError(error instanceof Error ? error.message : "Could not submit score.");
     }
   });
+  const acceptResult = useMutation({
+    mutationFn: (resultId: string) => mockApi.acceptMatchResult(matchId, resultId),
+    onSuccess: (updatedMatch) => {
+      queryClient.setQueryData(["live-match", matchId], updatedMatch);
+      void queryClient.invalidateQueries({ queryKey: ["live-match", matchId] });
+    }
+  });
+  const rejectResult = useMutation({
+    mutationFn: (payload: { resultId: string; reason: string }) =>
+      mockApi.rejectMatchResult(matchId, payload.resultId, { reason: payload.reason }),
+    onSuccess: (updatedMatch) => {
+      setRejectReason("");
+      queryClient.setQueryData(["live-match", matchId], updatedMatch);
+      void queryClient.invalidateQueries({ queryKey: ["live-match", matchId] });
+    }
+  });
+  const uploadEvidence = useMutation({
+    mutationFn: (payload: { disputeId: string; file: File; note?: string }) =>
+      mockApi.uploadDisputeEvidence(matchId, payload.disputeId, {
+        evidenceFile: payload.file,
+        note: payload.note
+      }),
+    onSuccess: (updatedMatch) => {
+      setEvidenceNote("");
+      setScreenshot(null);
+      setScreenshotPreview(undefined);
+      queryClient.setQueryData(["live-match", matchId], updatedMatch);
+      void queryClient.invalidateQueries({ queryKey: ["live-match", matchId] });
+    }
+  });
 
   const playerSubmission = useMemo(
     () => matchQuery.data?.submissions.find((submission) => submission.playerId === matchQuery.data?.player.id),
@@ -71,8 +107,16 @@ export function LiveMatchView({ matchId }: { matchId: string }) {
     [matchQuery.data]
   );
 
-  if (matchQuery.isLoading) {
+  if (meQuery.isLoading || matchQuery.isLoading) {
     return <PageLoader label="Loading live match" />;
+  }
+
+  if (!approved) {
+    return (
+      <PageStack>
+        <ApprovalNotice />
+      </PageStack>
+    );
   }
 
   if (matchQuery.isError || !matchQuery.data) {
@@ -87,6 +131,9 @@ export function LiveMatchView({ matchId }: { matchId: string }) {
   }
 
   const match = matchQuery.data;
+  const resultId = match.resultId ?? playerSubmission?.id ?? opponentSubmission?.id;
+  const isLoser = Boolean(match.loserId && match.player.id === match.loserId);
+  const isWinner = Boolean(match.winnerId && match.player.id === match.winnerId);
 
   function handleScreenshot(file: File | null) {
     setScreenshot(file);
@@ -104,6 +151,13 @@ export function LiveMatchView({ matchId }: { matchId: string }) {
 
     if (myScore === "" || opponentScore === "") {
       setFormError("Enter both scores before submitting.");
+      return;
+    }
+
+    const my = Number(myScore);
+    const opp = Number(opponentScore);
+    if (my <= opp) {
+      setFormError("Draws are not allowed. Winner score must be greater than loser score.");
       return;
     }
 
@@ -134,6 +188,70 @@ export function LiveMatchView({ matchId }: { matchId: string }) {
         onScreenshotChange={handleScreenshot}
         onSubmit={handleSubmit}
       />
+
+      {match.status === "played" && isLoser ? (
+        <ActionCard>
+          <CardBody>
+            <SectionTitle>
+              <div>
+                <h2>Result Confirmation</h2>
+                <p>Submitted winner: {match.winnerId === match.playerOneId ? match.player.gamerTag : match.opponent.gamerTag}</p>
+              </div>
+            </SectionTitle>
+            <p>Score: {formatFinalScore(match, playerSubmission, opponentSubmission)}</p>
+            {!resultId ? <ErrorText>Result reference unavailable. Refresh and try again.</ErrorText> : null}
+            <SubmitForm
+              onSubmit={(event) => {
+                event.preventDefault();
+                if (!resultId) return;
+                acceptResult.mutate(resultId);
+              }}
+            >
+              <Button type="submit" disabled={!resultId || acceptResult.isPending}>Accept Result</Button>
+            </SubmitForm>
+            <SubmitForm
+              onSubmit={(event) => {
+                event.preventDefault();
+                if (!resultId || !rejectReason.trim()) return;
+                rejectResult.mutate({ resultId, reason: rejectReason.trim() });
+              }}
+            >
+              <Field>
+                <span>Rejection reason</span>
+                <input value={rejectReason} onChange={(event) => setRejectReason(event.target.value)} />
+              </Field>
+              <Button type="submit" variant="secondary" disabled={!resultId || !rejectReason.trim() || rejectResult.isPending}>
+                Reject Result
+              </Button>
+            </SubmitForm>
+          </CardBody>
+        </ActionCard>
+      ) : null}
+
+      {match.status === "disputed" && isWinner ? (
+        <ActionCard>
+          <CardBody>
+            <SectionTitle>
+              <div>
+                <h2>Dispute Evidence</h2>
+                <p>Upload screenshot evidence for admin review.</p>
+              </div>
+            </SectionTitle>
+            <UploadDropzone fileName={screenshot?.name} onChange={handleScreenshot} />
+            <Field>
+              <span>Note (optional)</span>
+              <input value={evidenceNote} onChange={(event) => setEvidenceNote(event.target.value)} />
+            </Field>
+            <Button
+              type="button"
+              disabled={!screenshot || uploadEvidence.isPending}
+              onClick={() => screenshot && uploadEvidence.mutate({ disputeId: match.id, file: screenshot, note: evidenceNote })}
+            >
+              Submit Evidence
+            </Button>
+          </CardBody>
+        </ActionCard>
+      ) : null}
 
       <PastMatchesList matches={pastMatchesQuery.data ?? []} isLoading={pastMatchesQuery.isLoading} />
     </PageStack>
@@ -170,7 +288,12 @@ function ScoreSubmissionCard({
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
 }) {
   const hasPlayerSubmission = Boolean(playerSubmission);
-  const canSubmit = !hasPlayerSubmission && match.status !== "completed" && match.status !== "disputed";
+  const canSubmit =
+    !hasPlayerSubmission &&
+    match.status !== "completed" &&
+    match.status !== "disputed" &&
+    match.status !== "pending_admin_approval" &&
+    match.status !== "played";
 
   return (
     <Card>
@@ -178,7 +301,7 @@ function ScoreSubmissionCard({
         <SectionTitle>
           <div>
             <h2>Score Submission</h2>
-            <p>Both players enter their own score and opponent score. Matching submissions verify automatically; conflicting submissions go to admin review.</p>
+            <p>Winner submits score first. Loser confirms, then admin approves.</p>
           </div>
         </SectionTitle>
 
@@ -206,8 +329,18 @@ function ScoreSubmissionCard({
           <ResultState $tone="pending">
             <Clock size={22} />
             <div>
-              <h3>Waiting for opponent submission</h3>
-              <p>Your score is saved. The match completes automatically if both submissions tally.</p>
+              <h3>Waiting for opponent confirmation</h3>
+              <p>Result submitted. Waiting for opponent confirmation.</p>
+            </div>
+          </ResultState>
+        ) : null}
+
+        {match.status === "pending_admin_approval" ? (
+          <ResultState $tone="pending">
+            <Clock size={22} />
+            <div>
+              <h3>Waiting for admin approval</h3>
+              <p>Result accepted. Waiting for admin approval.</p>
             </div>
           </ResultState>
         ) : null}
@@ -482,6 +615,8 @@ const HeaderCard = styled(Card)`
     line-height: 1.1;
   }
 `;
+
+const ActionCard = styled(Card)``;
 
 const HeaderGrid = styled.div`
   display: grid;

@@ -13,13 +13,10 @@ import type { RegisterPasswordPayload, RegisterQualificationPayload } from "@/ty
 const minimumXp = 1000;
 
 const initialQualification: RegisterQualificationPayload = {
-  fullName: "",
   email: "",
-  gameTag: "",
   phoneNumber: "",
-  telegramUsername: "",
   discordUsername: "",
-  currentXp: 0,
+  currentXp: 1000,
   statScreenshot: null
 };
 
@@ -160,24 +157,12 @@ export function RegisterView() {
               </SectionHead>
               <FieldsGrid>
                 <Field>
-                  <span>Full name</span>
-                  <input value={qualification.fullName} onChange={(event) => updateQualification("fullName", event.target.value)} />
-                </Field>
-                <Field>
                   <span>Email address</span>
                   <input type="email" value={qualification.email} onChange={(event) => updateQualification("email", event.target.value)} />
                 </Field>
                 <Field>
-                  <span>Game tag / in-game username</span>
-                  <input value={qualification.gameTag} onChange={(event) => updateQualification("gameTag", event.target.value)} />
-                </Field>
-                <Field>
-                  <span>Phone number</span>
+                  <span>Phone number (optional)</span>
                   <input value={qualification.phoneNumber} onChange={(event) => updateQualification("phoneNumber", event.target.value)} />
-                </Field>
-                <Field>
-                  <span>Telegram username</span>
-                  <input value={qualification.telegramUsername} onChange={(event) => updateQualification("telegramUsername", event.target.value)} />
                 </Field>
                 <Field>
                   <span>Discord username</span>
@@ -191,7 +176,7 @@ export function RegisterView() {
                     value={qualification.currentXp || ""}
                     onChange={(event) => updateQualification("currentXp", Number(event.target.value))}
                   />
-                  {qualification.currentXp > 0 && qualification.currentXp < minimumXp ? (
+                  {(qualification.currentXp ?? 0) > 0 && (qualification.currentXp ?? 0) < minimumXp ? (
                     <InlineError>You need at least 1,000 XP to qualify for this cycle.</InlineError>
                   ) : null}
                 </Field>
@@ -266,12 +251,10 @@ export function RegisterView() {
 function validateQualification(payload: RegisterQualificationPayload): string[] {
   const errors: string[] = [];
 
-  if (!payload.fullName.trim()) errors.push("Full name is required.");
   if (!payload.email.trim()) errors.push("Email address is required.");
-  if (!payload.gameTag.trim()) errors.push("Game tag is required.");
-  if (!payload.phoneNumber.trim()) errors.push("Phone number is required.");
-  if (!payload.telegramUsername.trim()) errors.push("Telegram username is required.");
-  if (payload.currentXp < minimumXp) errors.push("You need at least 1,000 XP to qualify for this cycle.");
+  if (!/^\S+@\S+\.\S+$/.test(payload.email.trim())) errors.push("Email address must be valid.");
+  if (!payload.discordUsername?.trim()) errors.push("Discord username is required.");
+  if ((payload.currentXp ?? 0) < minimumXp) errors.push("You need at least 1,000 XP to qualify for this cycle.");
   if (!payload.statScreenshot) errors.push("Screenshot evidence is required.");
 
   return errors;

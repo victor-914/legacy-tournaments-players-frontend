@@ -6,11 +6,12 @@ import type {
   FindMatch,
   LiveMatch,
   Match,
+  MatchResultRejectPayload,
+  MatchResultSubmitPayload,
   MatchMessage,
   PastMatch,
   Player,
   PlayerGroupStage,
-  ScreenshotEvidence,
   Standing,
   Tournament
 } from "@/types/domain";
@@ -50,22 +51,39 @@ export const mockApi = {
   },
   async submitMatchScore(
     matchId: string,
-    payload: {
-      myScore: number;
-      opponentScore: number;
-      evidence: Pick<ScreenshotEvidence, "fileName" | "mimeType" | "previewUrl"> & { file?: File };
-      submitterId?: string;
-    }
+    payload: MatchResultSubmitPayload
   ): Promise<LiveMatch> {
     const formData = new FormData();
     formData.append("myScore", String(payload.myScore));
     formData.append("opponentScore", String(payload.opponentScore));
-    if (payload.evidence.file) {
-      formData.append("evidence", payload.evidence.file);
+    if (payload.evidenceFile) {
+      formData.append("evidence", payload.evidenceFile);
     }
 
     return unwrap(
-      await apiClient.post<ApiResponse<LiveMatch>>(`/matches/${matchId}/submit-score`, formData, {
+      await apiClient.post<ApiResponse<LiveMatch>>(`/matches/${matchId}/results`, formData, {
+        headers: { "Content-Type": "multipart/form-data" }
+      })
+    );
+  },
+  async acceptMatchResult(matchId: string, resultId: string): Promise<LiveMatch> {
+    return unwrap(await apiClient.post<ApiResponse<LiveMatch>>(`/matches/${matchId}/results/${resultId}/accept`));
+  },
+  async rejectMatchResult(matchId: string, resultId: string, payload: MatchResultRejectPayload): Promise<LiveMatch> {
+    return unwrap(await apiClient.post<ApiResponse<LiveMatch>>(`/matches/${matchId}/results/${resultId}/reject`, payload));
+  },
+  async uploadDisputeEvidence(
+    matchId: string,
+    disputeId: string,
+    payload: { evidenceFile: File; note?: string }
+  ): Promise<LiveMatch> {
+    const formData = new FormData();
+    formData.append("evidence", payload.evidenceFile);
+    if (payload.note?.trim()) {
+      formData.append("note", payload.note.trim());
+    }
+    return unwrap(
+      await apiClient.post<ApiResponse<LiveMatch>>(`/matches/${matchId}/disputes/${disputeId}/evidence`, formData, {
         headers: { "Content-Type": "multipart/form-data" }
       })
     );

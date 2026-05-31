@@ -5,17 +5,26 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import styled from "styled-components";
+import { ApprovalNotice } from "@/components/auth/ApprovalNotice";
 import { Card, CardBody } from "@/components/ui/Card";
 import { PageLoader } from "@/components/ui/PageLoader";
 import { PageStack } from "@/components/ui/PagePrimitives";
 import { mockApi } from "@/services/mockApi";
+import { playerService } from "@/services/playerService";
 import type { FindMatch } from "@/types/domain";
+import { isApprovedPlayer } from "@/utils/approval";
 
 const activeStatuses = new Set<string>(["pending", "live", "current"]);
 
 export default function LiveMatchPage() {
   const router = useRouter();
-  const matchesQuery = useQuery({ queryKey: ["find-matches"], queryFn: mockApi.getFindMatches });
+  const meQuery = useQuery({ queryKey: ["players-me"], queryFn: playerService.getMe });
+  const approved = isApprovedPlayer(meQuery.data);
+  const matchesQuery = useQuery({
+    queryKey: ["find-matches"],
+    queryFn: mockApi.getFindMatches,
+    enabled: approved
+  });
   const activeMatch = matchesQuery.data?.find(isActiveMatch);
 
   useEffect(() => {
@@ -24,8 +33,16 @@ export default function LiveMatchPage() {
     }
   }, [activeMatch, router]);
 
-  if (matchesQuery.isLoading || activeMatch) {
+  if (meQuery.isLoading || matchesQuery.isLoading || activeMatch) {
     return <PageLoader label="Finding active match" />;
+  }
+
+  if (!approved) {
+    return (
+      <PageStack>
+        <ApprovalNotice />
+      </PageStack>
+    );
   }
 
   return (
