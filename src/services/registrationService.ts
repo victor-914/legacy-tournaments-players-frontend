@@ -120,7 +120,7 @@ export async function createPlayerAccount(
           fullname: qualification.fullName?.trim() || qualification.discordUsername?.trim() || qualification.email.split("@")[0],
           emailAddress: qualification.email,
           gameTag: qualification.gameTag?.trim() || qualification.discordUsername?.trim() || qualification.email.split("@")[0],
-          phoneNumber: qualification.phoneNumber?.trim() || "N/A",
+          phoneNumber: qualification.phoneNumber?.trim(),
           telegramUsername: qualification.telegramUsername?.trim() || qualification.discordUsername?.trim() || "N/A",
           discordUsername: qualification.discordUsername?.trim() || "",
           currentXp: qualification.currentXp ?? 1000,

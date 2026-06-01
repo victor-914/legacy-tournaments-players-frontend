@@ -162,15 +162,15 @@ export function RegisterView() {
                   <input type="email" value={qualification.email} onChange={(event) => updateQualification("email", event.target.value)} />
                 </Field>
                 <Field>
-                  <span>Game name</span>
+                  <span>Game tag</span>
                   <input value={qualification.gameTag ?? ""} onChange={(event) => updateQualification("gameTag", event.target.value)} />
                 </Field>
                 <Field>
-                  <span>Phone number (optional)</span>
+                  <span>Phone number</span>
                   <input value={qualification.phoneNumber} onChange={(event) => updateQualification("phoneNumber", event.target.value)} />
                 </Field>
                 <Field>
-                  <span>Discord username</span>
+                  <span>Discord username (optional)</span>
                   <input value={qualification.discordUsername} onChange={(event) => updateQualification("discordUsername", event.target.value)} />
                 </Field>
                 <Field>
@@ -258,8 +258,8 @@ function validateQualification(payload: RegisterQualificationPayload): string[] 
 
   if (!payload.email.trim()) errors.push("Email address is required.");
   if (!/^\S+@\S+\.\S+$/.test(payload.email.trim())) errors.push("Email address must be valid.");
-  if (!payload.gameTag?.trim()) errors.push("Game name is required.");
-  if (!payload.discordUsername?.trim()) errors.push("Discord username is required.");
+  if (!payload.gameTag?.trim()) errors.push("Game tag is required.");
+  if (!payload.phoneNumber?.trim()) errors.push("Phone number is required.");
   if ((payload.currentXp ?? 0) < minimumXp) errors.push("You need at least 1,000 XP to qualify for this cycle.");
   if (!payload.statScreenshot) errors.push("Screenshot evidence is required.");
 
