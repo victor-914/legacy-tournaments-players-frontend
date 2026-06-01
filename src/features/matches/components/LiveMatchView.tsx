@@ -393,6 +393,9 @@ function DisputeEvidenceCard({
   onSubmit: () => void;
 }) {
   const needsScoreClaim = !playerSubmission;
+  const hasSubmittedEvidence = Boolean(
+    playerSubmission?.evidence && playerSubmission.evidence !== "pending-dispute-evidence"
+  );
   const scoreClaimReady = !needsScoreClaim || (disputeMyScore !== "" && disputeOpponentScore !== "");
 
   return (
@@ -401,9 +404,16 @@ function DisputeEvidenceCard({
         <SectionTitle>
           <div>
             <h2>Dispute Evidence</h2>
-            <p>Upload screenshot evidence for admin review.</p>
+            <p>Both players must upload screenshot evidence before admin can resolve the dispute.</p>
           </div>
         </SectionTitle>
+        <ResultState $tone={hasSubmittedEvidence ? "success" : "pending"}>
+          {hasSubmittedEvidence ? <CheckCircle2 size={22} /> : <Clock size={22} />}
+          <div>
+            <h3>{hasSubmittedEvidence ? "Your screenshot is uploaded" : "Your screenshot is required"}</h3>
+            <p>{hasSubmittedEvidence ? "You can upload a replacement screenshot if needed." : "Upload your match screenshot for admin review."}</p>
+          </div>
+        </ResultState>
         {needsScoreClaim ? (
           <ScoreGrid>
             <Field>

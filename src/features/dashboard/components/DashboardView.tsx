@@ -310,7 +310,14 @@ function CurrentMatchCard({ match }: { match: FindMatch }) {
 }
 
 function isActiveMatch(match: FindMatch): boolean {
-  return match.status === "pending" || match.status === "live" || match.status === "current";
+  return (
+    match.status === "pending" ||
+    match.status === "live" ||
+    match.status === "current" ||
+    match.status === "played" ||
+    match.status === "pending_admin_approval" ||
+    match.status === "disputed"
+  );
 }
 
 function getDashboardState(dashboard: PlayerMeDashboard): DashboardState {
