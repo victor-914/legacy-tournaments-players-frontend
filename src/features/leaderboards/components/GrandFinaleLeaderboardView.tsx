@@ -4,6 +4,7 @@ import { Crown } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import styled from "styled-components";
 import { Card, CardBody } from "@/components/ui/Card";
+import { Button } from "@/components/ui/Button";
 import { LeaderboardTable } from "@/components/ui/LeaderboardTable";
 import { PageLoader } from "@/components/ui/PageLoader";
 import { Grid, PageStack, SectionTitle, TableScroller } from "@/components/ui/PagePrimitives";
@@ -12,11 +13,14 @@ import { ProgressBar } from "@/components/ui/ProgressBar";
 import { mockApi } from "@/services/mockApi";
 
 export function GrandFinaleLeaderboardView() {
-  const { data, isLoading } = useQuery({ queryKey: ["leaderboard"], queryFn: mockApi.getLeaderboard });
+  const { data, isLoading, isError, refetch, isFetching } = useQuery({ queryKey: ["leaderboard"], queryFn: mockApi.getLeaderboard });
 
-  if (isLoading || !data) {
+  if (isLoading) {
     return <PageLoader label="Loading championship leaderboard" />;
   }
+
+  const standings = data ?? [];
+  const topQualifiers = standings.slice(0, 3);
 
   return (
     <PageStack>
@@ -24,26 +28,46 @@ export function GrandFinaleLeaderboardView() {
         <CardBody>
           <Crown size={54} />
           <h1>Championship Leaderboard</h1>
-          <p>Season progress is locking elite qualification spots.</p>
-          <ProgressBar value={64} label="Season qualification progress" />
+          <p>{standings.length} qualified player{standings.length === 1 ? "" : "s"} locked into the championship table.</p>
+          <ProgressBar value={standings.length > 0 ? 100 : 0} label="Championship qualifier list" />
         </CardBody>
       </Hero>
-      {/* <Grid $columns={3}>
-        {data.slice(0, 3).map((standing) => (
-          <PlayerCard key={standing.player.id} player={standing.player} highlight rankLabel={`Elite #${standing.rank}`} />
-        ))}
-      </Grid> */}
+
+      {isError ? (
+        <Card>
+          <Notice>
+            <strong>Leaderboard unavailable</strong>
+            <p>Try refreshing the championship qualifier list.</p>
+            <Button variant="secondary" onClick={() => void refetch()} disabled={isFetching}>
+              {isFetching ? "Refreshing..." : "Refresh"}
+            </Button>
+          </Notice>
+        </Card>
+      ) : null}
+
+      {topQualifiers.length > 0 ? (
+        <Grid $columns={3}>
+          {topQualifiers.map((standing) => (
+            <PlayerCard key={standing.player.id} player={standing.player} highlight rankLabel={`Championship #${standing.rank}`} />
+          ))}
+        </Grid>
+      ) : null}
+
       <Card>
         <CardBody>
           <SectionTitle>
             <div>
-              <h2>Championship Table</h2>
-              <p>Rank, XP, points, win rate, and cycle position.</p>
+              <h2>Championship Qualifiers</h2>
+              <p>Qualified players ranked by seed, points, wins, score difference, and XP.</p>
             </div>
           </SectionTitle>
-          <TableScroller>
-            <LeaderboardTable standings={data} showQualificationLine={false} />
-          </TableScroller>
+          {standings.length === 0 && !isError ? (
+            <EmptyState>No championship qualifiers are available yet.</EmptyState>
+          ) : (
+            <TableScroller>
+              <LeaderboardTable standings={standings} showQualificationLine={false} />
+            </TableScroller>
+          )}
         </CardBody>
       </Card>
     </PageStack>
@@ -69,4 +93,23 @@ const Hero = styled(Card)`
   p {
     color: ${({ theme }) => theme.colors.textMuted};
   }
+`;
+
+const Notice = styled(CardBody)`
+  display: grid;
+  gap: 0.75rem;
+
+  p {
+    margin: 0;
+    color: ${({ theme }) => theme.colors.textMuted};
+  }
+`;
+
+const EmptyState = styled.div`
+  min-height: 9rem;
+  display: grid;
+  place-items: center;
+  color: ${({ theme }) => theme.colors.textMuted};
+  border: 1px dashed ${({ theme }) => theme.colors.border};
+  border-radius: 8px;
 `;

@@ -70,6 +70,8 @@ export interface Standing {
   player: Player;
   wins: number;
   losses: number;
+  matchesPlayed?: number;
+  scoreDifference?: number;
   xp: number;
   points: number;
   qualificationStatus: QualificationStatus;
@@ -260,8 +262,15 @@ export interface PlayerGroupStage {
   isAdded: boolean;
   player: Player;
   groupName?: string;
+  groupNumber?: number;
+  groupCapacity?: number;
   season?: string;
   cycle?: string;
+  cycleNumber?: number;
+  cycleStartDate?: string;
+  cycleEndDate?: string;
+  qualificationSlots?: number;
+  requiredMatchesPerPlayer?: number;
   totalPlayers: number;
   currentMatch?: GroupStageMatch;
   matches: GroupStageMatch[];

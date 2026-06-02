@@ -10,9 +10,14 @@ import { formatNumber } from "@/utils/format";
 interface LeaderboardTableProps {
   standings: Standing[];
   showQualificationLine?: boolean;
+  qualificationSlots?: number;
 }
 
-export function LeaderboardTable({ standings, showQualificationLine = true }: LeaderboardTableProps) {
+export function LeaderboardTable({ standings, showQualificationLine = true, qualificationSlots }: LeaderboardTableProps) {
+  const qualificationLabel = qualificationSlots && qualificationSlots > 0
+    ? `TOP ${qualificationSlots} QUALIFY`
+    : "QUALIFICATION SLOTS NOT SET";
+
   return (
     <TableWrap>
       <thead>
@@ -53,7 +58,7 @@ export function LeaderboardTable({ standings, showQualificationLine = true }: Le
         ))}
         {showQualificationLine ? (
           <tr>
-            <LineCell colSpan={7}>TOP 5 QUALIFY</LineCell>
+            <LineCell colSpan={7}>{qualificationLabel}</LineCell>
           </tr>
         ) : null}
       </tbody>

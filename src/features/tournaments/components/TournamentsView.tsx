@@ -29,7 +29,7 @@ export function TournamentsView() {
     isError
   } = useQuery({ queryKey: ["player-group-stage"], queryFn: mockApi.getPlayerGroupStage, enabled: approved });
 
-  const record = useMemo(() => (data ? getPlayerRecord(data.matches) : null), [data]);
+  const record = useMemo(() => (data ? getPlayerRecord(data) : null), [data]);
 
   if (meQuery.isLoading || isLoading) {
     return <PageLoader label="Loading group stage" />;
@@ -90,7 +90,7 @@ export function TournamentsView() {
         <CurrentMatchCard match={data.currentMatch} />
       </TopGrid>
 
-      <PlayerRecordCard record={record ?? getPlayerRecord([])} totalMatches={data.matches.length} />
+      <PlayerRecordCard record={record ?? emptyRecord} totalMatches={data.matches.length} />
 
       <ContentGrid>
         <GroupMatchesList matches={data.matches} />
@@ -298,7 +298,7 @@ function GroupStandingTable({ standings, playerId }: { standings: Standing[]; pl
                   <StandingRow key={standing.player.id} $active={standing.player.id === playerId}>
                     <td>{standing.rank}</td>
                     <td>{standing.player.gamerTag}</td>
-                    <td>{standing.wins + standing.losses}</td>
+                    <td>{standing.matchesPlayed ?? standing.wins + standing.losses}</td>
                     <td>{standing.wins}</td>
                     <td>{standing.losses}</td>
                     <td>{standing.points}</td>
@@ -313,14 +313,24 @@ function GroupStandingTable({ standings, playerId }: { standings: Standing[]; pl
   );
 }
 
-function getPlayerRecord(matches: GroupStageMatch[]): PlayerRecord {
-  const playedMatches = matches.filter((match) => match.status === "played");
+const emptyRecord: PlayerRecord = {
+  played: 0,
+  wins: 0,
+  losses: 0,
+  remaining: 0
+};
+
+function getPlayerRecord(groupStage: PlayerGroupStage): PlayerRecord {
+  const standing = groupStage.standings.find((entry) => entry.player.id === groupStage.player.id);
+  const played = standing?.matchesPlayed ?? (standing?.wins ?? 0) + (standing?.losses ?? 0);
+  const requiredMatches = groupStage.requiredMatchesPerPlayer;
+  const assignedMatches = groupStage.matches.length;
 
   return {
-    played: playedMatches.length,
-    wins: playedMatches.filter((match) => match.result === "win").length,
-    losses: playedMatches.filter((match) => match.result === "loss").length,
-    remaining: matches.filter((match) => match.status !== "played").length
+    played,
+    wins: standing?.wins ?? 0,
+    losses: standing?.losses ?? 0,
+    remaining: Math.max((requiredMatches || assignedMatches) - played, 0)
   };
 }
 

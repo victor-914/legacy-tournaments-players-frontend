@@ -11,21 +11,15 @@ import { PageStack, SectionTitle, TableScroller } from "@/components/ui/PagePrim
 import { ProgressBar } from "@/components/ui/ProgressBar";
 import { mockApi } from "@/services/mockApi";
 import { playerService } from "@/services/playerService";
+import type { PlayerGroupStage } from "@/types/domain";
 import { isApprovedPlayer } from "@/utils/approval";
-
-const groupStageStats = [
-  { label: "Current Cycle", value: "Cycle 7", helper: "Active weekly run", icon: CalendarDays, tone: "gold" },
-  { label: "Group Name", value: "Group A", helper: "Assigned pool", icon: Shield, tone: "blue" },
-  { label: "Slots", value: "Top 5", helper: "Advance onward", icon: Trophy, tone: "green" },
-  { label: "Time Remaining", value: "19h 42m", helper: "Before lock", icon: Clock3, tone: "red" }
-] as const;
 
 export function GroupStageView() {
   const meQuery = useQuery({ queryKey: ["players-me"], queryFn: playerService.getMe });
   const approved = isApprovedPlayer(meQuery.data);
-  const { data, isLoading } = useQuery({ queryKey: ["standings"], queryFn: mockApi.getStandings, enabled: approved });
+  const { data, isLoading, isError } = useQuery({ queryKey: ["player-group-stage"], queryFn: mockApi.getPlayerGroupStage, enabled: approved });
 
-  if (meQuery.isLoading || isLoading || (approved && !data)) {
+  if (meQuery.isLoading || isLoading) {
     return <PageLoader label="Loading group stage" />;
   }
 
@@ -37,10 +31,26 @@ export function GroupStageView() {
     );
   }
 
+  if (isError || !data) {
+    return (
+      <PageStack>
+        <Card>
+          <Notice>
+            <strong>Group stage unavailable</strong>
+            <span>We could not load your current cycle and group information.</span>
+          </Notice>
+        </Card>
+      </PageStack>
+    );
+  }
+
+  const stats = getGroupStageStats(data);
+  const groupProgress = getGroupProgress(data);
+
   return (
     <PageStack>
       <StatsGrid>
-        {groupStageStats.map((stat) => {
+        {stats.map((stat) => {
           const Icon = stat.icon;
 
           return (
@@ -59,7 +69,7 @@ export function GroupStageView() {
           );
         })}
       </StatsGrid>
-      <ProgressBar value={72} label="Group stage intensity" />
+      <ProgressBar value={groupProgress} label={data.groupCapacity ? "Group capacity" : "Group stage progress"} />
       <Card>
         <CardBody>
           <SectionTitle>
@@ -69,7 +79,7 @@ export function GroupStageView() {
             </div>
           </SectionTitle>
           <TableScroller>
-            <LeaderboardTable standings={data ?? []} />
+            <LeaderboardTable standings={data.standings} qualificationSlots={data.qualificationSlots} />
           </TableScroller>
         </CardBody>
       </Card>
@@ -77,7 +87,95 @@ export function GroupStageView() {
   );
 }
 
-type StatTone = (typeof groupStageStats)[number]["tone"];
+type StatTone = "gold" | "blue" | "green" | "red";
+
+interface GroupStageStat {
+  label: string;
+  value: string;
+  helper: string;
+  icon: typeof CalendarDays;
+  tone: StatTone;
+}
+
+function getGroupStageStats(groupStage: PlayerGroupStage): GroupStageStat[] {
+  return [
+    {
+      label: "Current Cycle",
+      value: formatCycle(groupStage),
+      helper: formatDateRange(groupStage.cycleStartDate, groupStage.cycleEndDate),
+      icon: CalendarDays,
+      tone: "gold"
+    },
+    {
+      label: "Group Name",
+      value: groupStage.groupName ?? "Pending",
+      helper: groupStage.groupCapacity
+        ? `${groupStage.totalPlayers} / ${groupStage.groupCapacity} players`
+        : `${groupStage.totalPlayers} players assigned`,
+      icon: Shield,
+      tone: "blue"
+    },
+    {
+      label: "Slots",
+      value: groupStage.qualificationSlots ? `Top ${groupStage.qualificationSlots}` : "Not set",
+      helper: "Advance to championship",
+      icon: Trophy,
+      tone: "green"
+    },
+    {
+      label: "Time Remaining",
+      value: formatTimeRemaining(groupStage.cycleEndDate),
+      helper: "Before cycle lock",
+      icon: Clock3,
+      tone: "red"
+    }
+  ];
+}
+
+function formatCycle(groupStage: PlayerGroupStage): string {
+  if (groupStage.cycle) return groupStage.cycle;
+  if (groupStage.cycleNumber) return `Cycle ${groupStage.cycleNumber}`;
+  return "No active cycle";
+}
+
+function formatDateRange(startDate?: string, endDate?: string): string {
+  if (!startDate && !endDate) return "Active weekly run";
+  const formatter = new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric" });
+  const start = startDate ? formatter.format(new Date(startDate)) : "Start pending";
+  const end = endDate ? formatter.format(new Date(endDate)) : "End pending";
+  return `${start} - ${end}`;
+}
+
+function formatTimeRemaining(endDate?: string): string {
+  if (!endDate) return "Not set";
+  const end = new Date(endDate).getTime();
+  if (!Number.isFinite(end)) return "Not set";
+
+  const remainingMs = end - Date.now();
+  if (remainingMs <= 0) return "Closed";
+
+  const totalMinutes = Math.ceil(remainingMs / 60_000);
+  const days = Math.floor(totalMinutes / 1440);
+  const hours = Math.floor((totalMinutes % 1440) / 60);
+  const minutes = totalMinutes % 60;
+
+  if (days > 0) return `${days}d ${hours}h`;
+  if (hours > 0) return `${hours}h ${minutes}m`;
+  return `${minutes}m`;
+}
+
+function getGroupProgress(groupStage: PlayerGroupStage): number {
+  if (groupStage.groupCapacity && groupStage.groupCapacity > 0) {
+    return Math.min(100, Math.round((groupStage.totalPlayers / groupStage.groupCapacity) * 100));
+  }
+
+  if (groupStage.requiredMatchesPerPlayer && groupStage.requiredMatchesPerPlayer > 0) {
+    const playedMatches = groupStage.matches.filter((match) => match.result !== "not_played").length;
+    return Math.min(100, Math.round((playedMatches / groupStage.requiredMatchesPerPlayer) * 100));
+  }
+
+  return groupStage.standings.length > 0 ? 100 : 0;
+}
 
 const toneStyles = {
   gold: css`
@@ -106,6 +204,15 @@ const StatsGrid = styled.div`
   display: grid;
   gap: 0.9rem;
   grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+`;
+
+const Notice = styled(CardBody)`
+  display: grid;
+  gap: 0.35rem;
+
+  span {
+    color: ${({ theme }) => theme.colors.textMuted};
+  }
 `;
 
 const StatCard = styled(Card)<{ $tone: StatTone }>`
