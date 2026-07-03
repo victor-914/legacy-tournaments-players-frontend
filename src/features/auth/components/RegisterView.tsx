@@ -170,7 +170,7 @@ export function RegisterView() {
                   <input value={qualification.phoneNumber} onChange={(event) => updateQualification("phoneNumber", event.target.value)} />
                 </Field>
                 <Field>
-                  <span>Discord username (optional)</span>
+                  <span>Discord username</span>
                   <input value={qualification.discordUsername} onChange={(event) => updateQualification("discordUsername", event.target.value)} />
                 </Field>
                 <Field>
