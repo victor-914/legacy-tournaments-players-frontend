@@ -1,0 +1,74 @@
+name: Build & push Legacy-esport-players-frontend Docker Image
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+env:
+  GITHUB_USER: victor-914
+  APP_NAME: legacy-tournament-management-esport-players-frontend
+  RELEASE: 1.0.0
+  REGISTRY: ghcr.io
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Login to GHCR
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GHCR_PAT }}
+
+      - name: Compute IMAGE_TAG
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          API_URL="https://api.github.com/users/${GITHUB_USER}/packages/container/${APP_NAME}/versions?per_page=100"
+
+          HTTP_CODE=$(curl -sS -o resp.json -w "%{http_code}" \
+            -H "Authorization: Bearer ${{ secrets.GHCR_PAT }}" \
+            -H "Accept: application/vnd.github+json" \
+            "$API_URL" || true)
+
+          TAGS=""
+
+          if [[ "$HTTP_CODE" == "200" ]]; then
+            if jq -e 'type=="array"' resp.json >/dev/null 2>&1; then
+              TAGS=$(jq -r '.[]? | .metadata? .container? .tags? // [] | .[]' resp.json 2>/dev/null || true)
+            fi
+          fi
+
+          MAX=0
+          if [[ -n "${TAGS:-}" ]]; then
+            while read -r TAG; do
+              if [[ "$TAG" =~ ^${RELEASE}-([0-9]+)$ ]]; then
+                NUM="${BASH_REMATCH[1]}"
+                (( NUM > MAX )) && MAX="$NUM"
+              fi
+            done <<< "$TAGS"
+          fi
+
+          NEXT=$((MAX + 1))
+
+          echo "IMAGE_NAME=${REGISTRY}/${GITHUB_USER}/${APP_NAME}" >> "$GITHUB_ENV"
+          echo "IMAGE_TAG=${RELEASE}-${NEXT}" >> "$GITHUB_ENV"
+
+      - name: Build image
+        run: |
+          docker build -t $IMAGE_NAME:$IMAGE_TAG .
+          docker tag $IMAGE_NAME:$IMAGE_TAG $IMAGE_NAME:latest
+
+      - name: Push image
+        run: |
+          docker push $IMAGE_NAME:$IMAGE_TAG
+          docker push $IMAGE_NAME:latest
+
+      - name: Done
+        run: echo "Pushed $IMAGE_NAME:$IMAGE_TAG"
