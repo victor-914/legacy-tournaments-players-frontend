@@ -15,7 +15,7 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
 # NEXT_PUBLIC_* vars are inlined at build time
-ENV NEXT_PUBLIC_API_URL=https://legacytm.apexrock.org/api
+ENV NEXT_PUBLIC_API_URL=https://legacytm.apexrock.org
 ENV NEXT_PUBLIC_SOCKET_URL=https://legacytmsocket.apexrock.org
 ENV NEXT_TELEMETRY_DISABLED=1
 RUN npm run build
