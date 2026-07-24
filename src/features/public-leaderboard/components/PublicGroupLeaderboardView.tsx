@@ -37,7 +37,7 @@ export function PublicGroupLeaderboardView({ groupId }: PublicGroupLeaderboardVi
     );
   }
 
-  const standings = toStandings(data.entries);
+  const standings = toStandings(Array.isArray(data.entries) ? data.entries : []);
 
   return (
     <Card>
