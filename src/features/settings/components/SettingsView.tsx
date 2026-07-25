@@ -5,7 +5,7 @@ import styled from "styled-components";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Card, CardBody } from "@/components/ui/Card";
-import { Grid, PageStack, SectionTitle } from "@/components/ui/PagePrimitives";
+import { PageStack, SectionTitle } from "@/components/ui/PagePrimitives";
 
 const sections = [
   { title: "Account", icon: UserRound, fields: ["Gamer tag", "Email", "Password"] },
@@ -25,7 +25,7 @@ export function SettingsView() {
           <p>Player controls for account, match, notification, and region behavior.</p>
         </div>
       </SectionTitle>
-      <Grid $columns={2}>
+      <SectionsGrid>
         {sections.map((section) => {
           const Icon = section.icon;
           return (
@@ -49,10 +49,23 @@ export function SettingsView() {
             </Card>
           );
         })}
-      </Grid>
+      </SectionsGrid>
     </PageStack>
   );
 }
+
+const SectionsGrid = styled.div`
+  display: grid;
+  gap: 1rem;
+
+  @media (min-width: ${({ theme }) => theme.breakpoints.sm}) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  @media (min-width: ${({ theme }) => theme.breakpoints.lg}) {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+`;
 
 const SectionHeader = styled.div`
   display: grid;

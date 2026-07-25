@@ -127,7 +127,7 @@ function formatGeneratedAt(value: string): string {
 }
 
 const Hero = styled(Card)`
-  min-height: 16rem;
+  min-height: 12rem;
   display: grid;
   align-items: end;
 
@@ -145,13 +145,23 @@ const Hero = styled(Card)`
   p {
     color: ${({ theme }) => theme.colors.textMuted};
   }
+
+  @media (min-width: ${({ theme }) => theme.breakpoints.sm}) {
+    min-height: 16rem;
+  }
 `;
 
 const TopRow = styled.div`
   display: flex;
+  flex-wrap: wrap;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 1rem;
+  gap: 0.75rem;
+
+  @media (min-width: ${({ theme }) => theme.breakpoints.sm}) {
+    flex-wrap: nowrap;
+    gap: 1rem;
+  }
 `;
 
 const LiveBadge = styled.div<{ $connected: boolean }>`

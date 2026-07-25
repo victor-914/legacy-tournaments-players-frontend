@@ -75,7 +75,7 @@ export function GrandFinaleLeaderboardView() {
 }
 
 const Hero = styled(Card)`
-  min-height: 19rem;
+  min-height: 13rem;
   display: grid;
   align-items: end;
 
@@ -92,6 +92,10 @@ const Hero = styled(Card)`
 
   p {
     color: ${({ theme }) => theme.colors.textMuted};
+  }
+
+  @media (min-width: ${({ theme }) => theme.breakpoints.sm}) {
+    min-height: 19rem;
   }
 `;
 

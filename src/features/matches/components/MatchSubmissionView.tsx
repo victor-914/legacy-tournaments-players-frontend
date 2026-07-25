@@ -131,8 +131,12 @@ const Header = styled(Card)`
 
 const Timer = styled.div`
   color: ${({ theme }) => theme.colors.gold};
-  font-size: 3rem;
+  font-size: 2.25rem;
   font-weight: 900;
+
+  @media (min-width: ${({ theme }) => theme.breakpoints.sm}) {
+    font-size: 3rem;
+  }
 `;
 
 const Form = styled.form`

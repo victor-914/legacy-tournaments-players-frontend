@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
+import Link from "next/link";
 import styled from "styled-components";
 import { PageStack, SectionTitle } from "@/components/ui/PagePrimitives";
 import { PublicGroupLeaderboardView } from "@/features/public-leaderboard/components/PublicGroupLeaderboardView";
@@ -13,8 +15,10 @@ export function PublicLeaderboardScreen() {
   return (
     <PageWrap>
       <TopBar>
-        <Brand>
-          <Mark>LG</Mark>
+        <Brand href="/dashboard">
+          <LogoMark>
+            <Image src="/legacy_logo.jpeg" alt="Legacy Gaming" width={40} height={40} />
+          </LogoMark>
           <span>Legacy Gaming</span>
         </Brand>
       </TopBar>
@@ -62,7 +66,7 @@ const TopBar = styled.header`
   }
 `;
 
-const Brand = styled.div`
+const Brand = styled(Link)`
   display: flex;
   align-items: center;
   gap: 0.75rem;
@@ -71,15 +75,20 @@ const Brand = styled.div`
   color: ${({ theme }) => theme.colors.text};
 `;
 
-const Mark = styled.div`
+const LogoMark = styled.div`
   width: 2.5rem;
   height: 2.5rem;
-  display: grid;
-  place-items: center;
-  border-radius: 8px;
-  color: #0b0b0b;
-  background: ${({ theme }) => theme.colors.gold};
+  flex: none;
+  overflow: hidden;
+  border-radius: 50%;
   box-shadow: ${({ theme }) => theme.shadows.glowGold};
+
+  img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
 `;
 
 const Content = styled.div`

@@ -158,7 +158,7 @@ function formatDateTime(value: string): string {
 }
 
 const Hero = styled(Card)`
-  min-height: 18rem;
+  min-height: 13rem;
   display: grid;
   align-items: end;
 
@@ -170,6 +170,10 @@ const Hero = styled(Card)`
 
   p {
     color: ${({ theme }) => theme.colors.textMuted};
+  }
+
+  @media (min-width: ${({ theme }) => theme.breakpoints.sm}) {
+    min-height: 18rem;
   }
 `;
 
@@ -202,13 +206,26 @@ const Schedule = styled.ul`
 
   li {
     display: grid;
-    grid-template-columns: 5rem 1fr auto;
+    grid-template-columns: 1fr auto;
     align-items: center;
-    gap: 0.75rem;
+    gap: 0.4rem 0.75rem;
     padding: 0.8rem;
     border-radius: 8px;
     border: 1px solid ${({ theme }) => theme.colors.border};
     background: rgba(255, 255, 255, 0.04);
+
+    span {
+      grid-column: 1 / -1;
+    }
+
+    @media (min-width: ${({ theme }) => theme.breakpoints.sm}) {
+      grid-template-columns: 5rem 1fr auto;
+      gap: 0.75rem;
+
+      span {
+        grid-column: auto;
+      }
+    }
   }
 
   span {

@@ -1,10 +1,11 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Bell, LogOut, Wifi, WifiOff } from "lucide-react";
+import { Bell, LogOut, User, Wifi, WifiOff } from "lucide-react";
 import styled from "styled-components";
 import { playerNavigation } from "@/constants/navigation";
 import { useLiveEvents } from "@/hooks/useLiveEvents";
@@ -50,12 +51,14 @@ export function PlayerShell({ children }: { children: React.ReactNode }) {
   return (
     <Shell>
       <Sidebar>
-        <Brand>
-          <Mark>LG</Mark>
+        <Brand href="/dashboard">
+          <LogoMark>
+            <Image src="/legacy_logo.jpeg" alt="Legacy Gaming" width={40} height={40} />
+          </LogoMark>
           <span>Legacy Gaming</span>
         </Brand>
         <Nav>
-          {playerNavigation.slice(0, 7).map((item) => {
+          {playerNavigation.filter((item) => item.showOnDesktop !== false).map((item) => {
             const Icon = item.icon;
             const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
             const blocked = !approved && blockedTournamentRoutes.has(item.href);
@@ -76,15 +79,30 @@ export function PlayerShell({ children }: { children: React.ReactNode }) {
       </Sidebar>
       <Main>
         <Topbar>
-          <div>
-            <Kicker>{seasonCycleLabel}</Kicker>
-            <h1>{currentScreenLabel}</h1>
-          </div>
+          <TopbarLeft>
+            <TopbarBrand href="/dashboard" aria-label="Legacy Gaming home">
+              <LogoMark $size="2.25rem">
+                <Image src="/legacy_logo.jpeg" alt="Legacy Gaming" width={36} height={36} />
+              </LogoMark>
+            </TopbarBrand>
+            <div>
+              <Kicker>{seasonCycleLabel}</Kicker>
+              <h1>{currentScreenLabel}</h1>
+            </div>
+          </TopbarLeft>
           <TopActions>
             <SocketState $connected={connected} aria-label={connected ? "Socket connected" : "Socket disconnected"} title={connected ? "Socket connected" : "Socket disconnected"}>
               {connected ? <Wifi size={17} /> : <WifiOff size={17} />}
               <span>{connected ? "Live" : "Offline"}</span>
             </SocketState>
+            <ProfileLink
+              href="/profile"
+              aria-label="Profile"
+              title="Profile"
+              data-active={pathname === "/profile" || pathname.startsWith("/profile/")}
+            >
+              <User size={18} />
+            </ProfileLink>
             <NotificationButton
               type="button"
               aria-label="Notifications"
@@ -126,7 +144,7 @@ export function PlayerShell({ children }: { children: React.ReactNode }) {
         <Content>{children}</Content>
       </Main>
       <MobileNav>
-        {playerNavigation.slice(0, 5).map((item) => {
+        {playerNavigation.filter((item) => item.showOnMobile !== false).map((item) => {
           const Icon = item.icon;
           const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
           const blocked = !approved && blockedTournamentRoutes.has(item.href);
@@ -215,7 +233,7 @@ const Sidebar = styled.aside`
   }
 `;
 
-const Brand = styled.div`
+const Brand = styled(Link)`
   display: flex;
   align-items: center;
   gap: 0.75rem;
@@ -223,15 +241,20 @@ const Brand = styled.div`
   font-weight: 900;
 `;
 
-const Mark = styled.div`
-  width: 2.5rem;
-  height: 2.5rem;
-  display: grid;
-  place-items: center;
-  border-radius: 8px;
-  color: #0b0b0b;
-  background: ${({ theme }) => theme.colors.gold};
+const LogoMark = styled.div<{ $size?: string }>`
+  width: ${({ $size }) => $size ?? "2.5rem"};
+  height: ${({ $size }) => $size ?? "2.5rem"};
+  flex: none;
+  overflow: hidden;
+  border-radius: 50%;
   box-shadow: ${({ theme }) => theme.shadows.glowGold};
+
+  img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
 `;
 
 const Nav = styled.nav`
@@ -285,6 +308,22 @@ const Topbar = styled.header`
 
   @media (min-width: ${({ theme }) => theme.breakpoints.md}) {
     padding: 0.9rem 1.5rem;
+  }
+`;
+
+const TopbarLeft = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 0;
+`;
+
+const TopbarBrand = styled(Link)`
+  display: flex;
+  flex: none;
+
+  @media (min-width: ${({ theme }) => theme.breakpoints.lg}) {
+    display: none;
   }
 `;
 
@@ -356,6 +395,26 @@ const IconButton = styled.button`
 `;
 
 const NotificationButton = styled(IconButton)``;
+
+const ProfileLink = styled(Link)`
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 8px;
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  background: ${({ theme }) => theme.colors.surfaceGlass};
+  color: ${({ theme }) => theme.colors.text};
+  cursor: pointer;
+
+  &[data-active="true"] {
+    color: ${({ theme }) => theme.colors.gold};
+    border-color: ${({ theme }) => theme.colors.borderStrong};
+    background: ${({ theme }) => theme.colors.goldSoft};
+  }
+`;
 
 const NotificationPanel = styled.div`
   position: absolute;
@@ -451,16 +510,24 @@ const MobileNav = styled.nav`
   right: 0.8rem;
   bottom: 0.75rem;
   display: grid;
-  grid-template-columns: repeat(7, minmax(0, 1fr));
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(3.75rem, 1fr);
   gap: 0.35rem;
   padding: 0.4rem;
+  overflow-x: auto;
+  scrollbar-width: none;
   border: 1px solid ${({ theme }) => theme.colors.border};
   border-radius: 8px;
   background: rgba(22, 22, 22, 0.86);
   backdrop-filter: blur(18px);
 
+  &::-webkit-scrollbar {
+    display: none;
+  }
+
   a,
   button {
+    min-width: 3.75rem;
     min-height: 2.75rem;
     display: flex;
     align-items: center;

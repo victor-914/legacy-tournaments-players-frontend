@@ -86,11 +86,15 @@ function toStandings(entries: PublicGroupLeaderboardEntry[]): Standing[] {
 }
 
 const Placeholder = styled.div`
-  padding: 0.9rem;
+  padding: 0.75rem;
   border: 1px dashed ${({ theme }) => theme.colors.border};
   border-radius: 8px;
   color: ${({ theme }) => theme.colors.textMuted};
   font-size: 0.86rem;
+
+  @media (min-width: ${({ theme }) => theme.breakpoints.sm}) {
+    padding: 0.9rem;
+  }
 `;
 
 const Notice = styled(CardBody)`
@@ -100,6 +104,10 @@ const Notice = styled(CardBody)`
   p {
     margin: 0;
     color: ${({ theme }) => theme.colors.textMuted};
+  }
+
+  @media (min-width: ${({ theme }) => theme.breakpoints.lg}) {
+    gap: 0.75rem;
   }
 `;
 

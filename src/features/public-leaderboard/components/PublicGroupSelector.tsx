@@ -56,20 +56,41 @@ export function PublicGroupSelector({ selectedGroupId, onSelect }: PublicGroupSe
 
 const TabList = styled.div`
   display: flex;
-  flex-wrap: wrap;
-  gap: 0.6rem;
+  flex-wrap: nowrap;
+  gap: 0.5rem;
+  overflow-x: auto;
+  padding-bottom: 0.25rem;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+
+  @media (min-width: ${({ theme }) => theme.breakpoints.sm}) {
+    flex-wrap: wrap;
+    overflow-x: visible;
+    padding-bottom: 0;
+    gap: 0.6rem;
+  }
 `;
 
 const TabButton = styled.button`
+  flex: none;
   border: 1px solid ${({ theme }) => theme.colors.border};
   border-radius: 999px;
-  padding: 0.55rem 1rem;
+  padding: 0.5rem 0.85rem;
   background: ${({ theme }) => theme.colors.surfaceGlass};
   color: ${({ theme }) => theme.colors.textMuted};
   font-weight: 800;
-  font-size: 0.82rem;
+  font-size: 0.78rem;
   cursor: pointer;
   transition: ${({ theme }) => theme.animations.fast};
+
+  @media (min-width: ${({ theme }) => theme.breakpoints.sm}) {
+    padding: 0.55rem 1rem;
+    font-size: 0.82rem;
+  }
 
   &[data-active="true"] {
     color: ${({ theme }) => theme.colors.gold};
