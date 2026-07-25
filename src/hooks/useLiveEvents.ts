@@ -88,6 +88,7 @@ export function useLiveEvents() {
     socket.on("match:admin_rejected", invalidateMatchQueries);
     socket.on("player:approval_updated", () => {
       void queryClient.invalidateQueries({ queryKey: ["players-me"] });
+      void queryClient.invalidateQueries({ queryKey: ["player-tournaments"] });
       pushNotification("Your approval status has been updated.");
     });
 
