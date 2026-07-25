@@ -11,7 +11,12 @@ import { PageStack, SectionTitle, TableScroller } from "@/components/ui/PagePrim
 import { UploadDropzone } from "@/components/ui/UploadDropzone";
 import { playerTournamentsQueryKey, usePlayerTournaments } from "@/features/tournament-history/hooks/usePlayerTournaments";
 import { tournamentHistoryService } from "@/features/tournament-history/services/tournamentHistoryService";
-import type { PlayerTournamentEntry } from "@/features/tournament-history/types";
+import type {
+  ActiveTournamentEntry,
+  PastTournamentEntry,
+  TournamentPrize,
+  TournamentPrizeWon
+} from "@/features/tournament-history/types";
 import { uploadStatScreenshot } from "@/services/registrationService";
 import { playerService } from "@/services/playerService";
 import { isApprovedPlayer } from "@/utils/approval";
@@ -55,7 +60,7 @@ export function MyTournamentsView() {
 
   const data = tournamentsQuery.data;
   const activeCycle = data?.activeCycle ?? null;
-  const pastCycles = data?.pastCycles ?? [];
+  const pastCycles = data?.history ?? [];
   const state = getActiveCycleState(activeCycle, justSubmitted);
 
   return (
@@ -90,7 +95,7 @@ export function MyTournamentsView() {
   );
 }
 
-function getActiveCycleState(activeCycle: PlayerTournamentEntry | null, justSubmitted: boolean): ActiveCycleState {
+function getActiveCycleState(activeCycle: ActiveTournamentEntry | null, justSubmitted: boolean): ActiveCycleState {
   if (justSubmitted) return "pending";
 
   const status = normalizeStatus(activeCycle?.approvalStatus);
@@ -169,35 +174,33 @@ function PendingActiveCycleCard() {
   );
 }
 
-function ActiveCycleCard({ entry }: { entry: PlayerTournamentEntry }) {
-  const cycle = entry.cycle;
-
+function ActiveCycleCard({ entry }: { entry: ActiveTournamentEntry }) {
   return (
     <Card>
       <CardBody>
         <CardHeader>
           <div>
             <Kicker>Active Cycle</Kicker>
-            <h3>{cycle.name ?? "Active Cycle"}</h3>
+            <h3>{entry.cycleName ?? "Active Cycle"}</h3>
           </div>
-          <StatusPill>{formatStatusText(cycle.status)}</StatusPill>
+          <StatusPill>{formatStatusText(entry.approvalStatus)}</StatusPill>
         </CardHeader>
         <MetaGrid>
           <MetaItem>
             <span>Dates</span>
-            <strong>{formatDateRange(cycle.startDate, cycle.endDate)}</strong>
+            <strong>{formatDateRange(entry.startDate, entry.endDate)}</strong>
           </MetaItem>
           <MetaItem>
             <span>Current Rank</span>
-            <strong>{entry.rank ? `#${entry.rank}` : "Not ranked"}</strong>
+            <strong>{entry.currentRank ? `#${entry.currentRank}` : "Not ranked"}</strong>
           </MetaItem>
           <MetaItem>
-            <span>Group</span>
-            <strong>{entry.groupName ?? "Pending"}</strong>
+            <span>Qualification</span>
+            <strong>{formatStatusText(entry.qualificationStatus) || "Not qualified"}</strong>
           </MetaItem>
           <MetaItem>
             <span>Prize to be won</span>
-            <strong>{formatPrize(cycle.prize)}</strong>
+            <strong>{formatPrize(entry.prize)}</strong>
           </MetaItem>
         </MetaGrid>
       </CardBody>
@@ -205,7 +208,7 @@ function ActiveCycleCard({ entry }: { entry: PlayerTournamentEntry }) {
   );
 }
 
-function PastTournamentsCard({ entries }: { entries: PlayerTournamentEntry[] }) {
+function PastTournamentsCard({ entries }: { entries: PastTournamentEntry[] }) {
   return (
     <Card>
       <CardBody>
@@ -231,9 +234,9 @@ function PastTournamentsCard({ entries }: { entries: PlayerTournamentEntry[] }) 
               </thead>
               <tbody>
                 {entries.map((entry, index) => (
-                  <tr key={entry.cycle.id ?? index}>
-                    <td>{entry.cycle.name ?? "Cycle"}</td>
-                    <td>{formatDateRange(entry.cycle.startDate, entry.cycle.endDate)}</td>
+                  <tr key={entry.cycleId ?? index}>
+                    <td>{entry.cycleName ?? "Cycle"}</td>
+                    <td>{formatDateRange(entry.startDate, entry.endDate)}</td>
                     <td>{formatPlacement(entry)}</td>
                     <td>{formatStatusText(entry.qualificationStatus) || "-"}</td>
                     <td>{formatPrize(entry.prizeWon)}</td>
@@ -252,17 +255,24 @@ function normalizeStatus(value?: string): string {
   return value?.trim().toLowerCase() ?? "";
 }
 
-function formatPlacement(entry: PlayerTournamentEntry): string {
-  if (entry.finalPlacement) return `#${entry.finalPlacement}`;
-  if (entry.rank) return `#${entry.rank}`;
+function formatPlacement(entry: PastTournamentEntry): string {
+  if (entry.currentRank) return `#${entry.currentRank}`;
   return "-";
 }
 
-function formatPrize(value?: string | number | null): string {
-  if (value === undefined || value === null) return "—";
-  if (typeof value === "number") return new Intl.NumberFormat("en-US").format(value);
+function formatPrize(prize?: TournamentPrize | TournamentPrizeWon | null): string {
+  if (!prize) return "—";
 
-  return value.trim() || "—";
+  const parts: string[] = [];
+  if (typeof prize.value === "number") {
+    const amount = new Intl.NumberFormat("en-US").format(prize.value);
+    parts.push(prize.currency ? `${prize.currency} ${amount}` : amount);
+  }
+  if (prize.description) {
+    parts.push(prize.description);
+  }
+
+  return parts.length > 0 ? parts.join(" — ") : "—";
 }
 
 function formatStatusText(value?: string | null): string {

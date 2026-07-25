@@ -21,10 +21,10 @@ export const tournamentHistoryService = {
 
   async joinActiveCycle(upload: UploadedStatScreenshot): Promise<void> {
     await apiClient.post("/players/join-active-cycle", {
-      statScreenshotUrl: upload.url,
-      statScreenshotKey: upload.key,
-      statScreenshotFileName: upload.fileName,
-      statScreenshotMimeType: upload.mimeType
+      fileUrl: upload.url,
+      key: upload.key,
+      fileName: upload.fileName,
+      mimeType: upload.mimeType
     });
   }
 };
