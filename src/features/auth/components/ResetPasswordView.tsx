@@ -2,23 +2,53 @@
 
 import { FormEvent, useState } from "react";
 import Link from "next/link";
-import { AlertTriangle, Mail, ShieldCheck } from "lucide-react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { AlertTriangle, LockKeyhole, ShieldCheck } from "lucide-react";
 import styled from "styled-components";
 import { Button } from "@/components/ui/Button";
 import { Card, CardBody } from "@/components/ui/Card";
-import { authService } from "@/services/authService";
+import { PasswordResetError, authService } from "@/services/authService";
 
-export default function ForgotPasswordPage() {
-  const [email, setEmail] = useState("");
+function getResetErrorMessage(error: unknown) {
+  if (!(error instanceof PasswordResetError)) {
+    return "We could not reach the server. Please try again.";
+  }
+
+  switch (error.code) {
+    case "BAD_REQUEST":
+      return "This reset link is invalid or has expired. Request a new one.";
+    case "VALIDATION_ERROR":
+      return error.message || "Enter a valid new password.";
+    default:
+      return "We could not reach the server. Please try again.";
+  }
+}
+
+export function ResetPasswordView() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const token = searchParams.get("token") ?? "";
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState<string>();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
 
-  async function submitRequest(event: FormEvent<HTMLFormElement>) {
+  async function submitReset(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    if (!email.trim()) {
-      setError("Enter the email address on your player account.");
+    if (!token) {
+      setError("This reset link is invalid or has expired. Request a new one.");
+      return;
+    }
+
+    if (password.length < 8) {
+      setError("Password must be at least 8 characters.");
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      setError("Passwords do not match.");
       return;
     }
 
@@ -26,79 +56,103 @@ export default function ForgotPasswordPage() {
     setError(undefined);
 
     try {
-      await authService.requestPasswordReset(email.trim().toLowerCase());
+      await authService.resetPassword(token, password);
       setIsSubmitted(true);
-    } catch {
-      setError("We could not reach the server. Please try again.");
+    } catch (resetError) {
+      setError(getResetErrorMessage(resetError));
     } finally {
       setIsSubmitting(false);
     }
   }
 
   return (
-    <Shell>
-      <Panel>
+    <ResetShell>
+      <ResetCard>
         <CardBody>
           <Hero>
             <ShieldCheck size={34} />
             <span>Account Recovery</span>
-            <h1>Forgot password</h1>
-            <p>Enter your account email and we&apos;ll send a link to reset your password.</p>
+            <h1>Reset password</h1>
+            <p>Choose a new password for your player account.</p>
           </Hero>
 
           {isSubmitted ? (
-            <SuccessPanel role="status">
-              If an account exists for {email.trim().toLowerCase()}, a password reset email is on its way. Check your inbox and spam folder.
-            </SuccessPanel>
+            <>
+              <SuccessPanel role="status">Your password has been reset. You can now log in with your new password.</SuccessPanel>
+              <Button type="button" fullWidth onClick={() => router.replace("/login")}>
+                Go to login
+              </Button>
+            </>
           ) : (
-            <Form onSubmit={submitRequest}>
+            <Form onSubmit={submitReset}>
               <Field>
-                <span>Email address</span>
+                <span>New password</span>
                 <Control>
-                  <Mail size={18} />
+                  <LockKeyhole size={18} />
                   <input
-                    autoComplete="email"
-                    inputMode="email"
-                    type="email"
-                    value={email}
+                    autoComplete="new-password"
+                    type="password"
+                    value={password}
                     onChange={(event) => {
-                      setEmail(event.target.value);
+                      setPassword(event.target.value);
                       setError(undefined);
                     }}
                   />
                 </Control>
               </Field>
 
-              {error ? (
+              <Field>
+                <span>Confirm new password</span>
+                <Control>
+                  <LockKeyhole size={18} />
+                  <input
+                    autoComplete="new-password"
+                    type="password"
+                    value={confirmPassword}
+                    onChange={(event) => {
+                      setConfirmPassword(event.target.value);
+                      setError(undefined);
+                    }}
+                  />
+                </Control>
+              </Field>
+
+              {!token ? (
+                <ErrorPanel role="alert">
+                  <AlertTriangle size={18} />
+                  <span>This reset link is invalid or has expired. Request a new one.</span>
+                </ErrorPanel>
+              ) : error ? (
                 <ErrorPanel role="alert">
                   <AlertTriangle size={18} />
                   <span>{error}</span>
                 </ErrorPanel>
               ) : null}
 
-              <Button type="submit" fullWidth disabled={isSubmitting}>
-                {isSubmitting ? "Sending..." : "Send reset link"}
+              <Button type="submit" fullWidth disabled={isSubmitting || !token}>
+                {isSubmitting ? "Resetting..." : "Reset password"}
               </Button>
             </Form>
           )}
 
           <MetaRow>
+            <Link href="/forgot-password">Request a new link</Link>
             <Link href="/login">Back to login</Link>
           </MetaRow>
         </CardBody>
-      </Panel>
-    </Shell>
+      </ResetCard>
+    </ResetShell>
   );
 }
 
-const Shell = styled.main`
+const ResetShell = styled.main`
   min-height: 100vh;
   display: grid;
   place-items: center;
   padding: 1rem;
 `;
 
-const Panel = styled(Card)`
+const ResetCard = styled(Card)`
   width: min(100%, 30rem);
   border-color: ${({ theme }) => theme.colors.borderStrong};
 `;
@@ -177,7 +231,9 @@ const Control = styled.div`
 
 const MetaRow = styled.div`
   display: flex;
-  justify-content: center;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.8rem;
   margin-top: 1.2rem;
   color: ${({ theme }) => theme.colors.textMuted};
   font-size: 0.88rem;
@@ -212,6 +268,7 @@ const SuccessPanel = styled.div`
   border-radius: 8px;
   background: ${({ theme }) => theme.colors.surfaceGlass};
   padding: 0.9rem;
+  margin-bottom: 1rem;
   color: ${({ theme }) => theme.colors.text};
   font-size: 0.92rem;
   line-height: 1.45;

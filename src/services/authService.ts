@@ -30,6 +30,30 @@ export class LoginError extends Error {
   }
 }
 
+export type PasswordResetErrorCode = "BAD_REQUEST" | "VALIDATION_ERROR" | "SERVER_ERROR";
+
+export class PasswordResetError extends Error {
+  code: PasswordResetErrorCode;
+
+  constructor(code: PasswordResetErrorCode, message: string) {
+    super(message);
+    this.name = "PasswordResetError";
+    this.code = code;
+  }
+}
+
+function throwPasswordResetError(error: unknown): never {
+  if (axios.isAxiosError<BackendErrorResponse>(error)) {
+    const backendError = error.response?.data;
+    throw new PasswordResetError(
+      (backendError?.code as PasswordResetErrorCode) ?? "SERVER_ERROR",
+      backendError?.message ?? "We could not reach the server. Please try again."
+    );
+  }
+
+  throw error;
+}
+
 function unwrap<T>(payload: ApiEnvelope<T>): T {
   if (payload && typeof payload === "object" && "success" in payload && "data" in payload) {
     return (payload as ApiResponse<T>).data;
@@ -83,5 +107,21 @@ export const authService = {
 
   async logout(): Promise<void> {
     await apiClient.post("/auth/logout");
+  },
+
+  async requestPasswordReset(emailAddress: string): Promise<void> {
+    try {
+      await apiClient.post("/auth/forgot-password", { emailAddress });
+    } catch (error) {
+      throwPasswordResetError(error);
+    }
+  },
+
+  async resetPassword(token: string, password: string): Promise<void> {
+    try {
+      await apiClient.post("/auth/reset-password", { token, password });
+    } catch (error) {
+      throwPasswordResetError(error);
+    }
   }
 };
