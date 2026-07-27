@@ -1,5 +1,5 @@
 import { apiClient } from "@/services/apiClient";
-import type { ApiResponse, GroupLeaderboardEntry, PlayerMeDashboard } from "@/types/domain";
+import type { ApiResponse, GroupLeaderboardEntry, PlayerMeDashboard, UpdateProfilePayload } from "@/types/domain";
 
 type ApiEnvelope<T> = ApiResponse<T> | T;
 
@@ -22,6 +22,11 @@ function normalizeLeaderboard(payload: GroupLeaderboardEntry[] | { leaderboard?:
 export const playerService = {
   async getMe(): Promise<PlayerMeDashboard> {
     const response = await apiClient.get<ApiEnvelope<PlayerMeDashboard>>("/players/me");
+    return unwrap(response.data);
+  },
+
+  async updateProfile(payload: UpdateProfilePayload): Promise<PlayerMeDashboard> {
+    const response = await apiClient.patch<ApiEnvelope<PlayerMeDashboard>>("/players/me", payload);
     return unwrap(response.data);
   },
 

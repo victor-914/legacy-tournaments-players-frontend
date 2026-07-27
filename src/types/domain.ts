@@ -308,6 +308,10 @@ export interface PlayerMeUser {
   isApproved?: boolean | string;
   approvalStatus?: string;
   status?: string;
+  gameTag?: string;
+  phoneNumber?: string;
+  discordUsername?: string;
+  telegramUsername?: string;
 }
 
 export interface PlayerMePlayer {
@@ -374,6 +378,14 @@ export interface PlayerMeStanding {
   scoreDiff?: number;
   progressionStatus?: string;
   qualificationStatus?: string;
+}
+
+export interface UpdateProfilePayload {
+  fullname?: string;
+  gameTag?: string;
+  phoneNumber?: string;
+  discordUsername?: string;
+  telegramUsername?: string;
 }
 
 export interface PlayerMeDashboard {

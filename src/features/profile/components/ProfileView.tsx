@@ -1,8 +1,10 @@
 "use client";
 
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import styled from "styled-components";
 import { Badge } from "@/components/ui/Badge";
+import { Button } from "@/components/ui/Button";
 import { Card, CardBody } from "@/components/ui/Card";
 import { Grid, PageStack, SectionTitle } from "@/components/ui/PagePrimitives";
 import { PageLoader } from "@/components/ui/PageLoader";
@@ -10,8 +12,10 @@ import { ProgressBar } from "@/components/ui/ProgressBar";
 import { playerService } from "@/services/playerService";
 import type { PlayerMeDashboard } from "@/types/domain";
 import { formatNumber } from "@/utils/format";
+import { ProfileEditForm } from "./ProfileEditForm";
 
 export function ProfileView() {
+  const [isEditing, setIsEditing] = useState(false);
   const { data, isError, isLoading } = useQuery({ queryKey: ["players-me"], queryFn: playerService.getMe });
 
   if (isLoading) {
@@ -41,14 +45,23 @@ export function ProfileView() {
 
   return (
     <PageStack>
-      <Hero>
-        <CardBody>
-          <Badge label={formatText(approvalStatus)} tone={getApprovalTone(approvalStatus)} />
-          <h1>{gameTag}</h1>
-          <p>{fullName} / {formatNumber(currentXp)} XP</p>
-          <ProgressBar value={getProgressValue(data)} label="Level progression" />
-        </CardBody>
-      </Hero>
+      {isEditing ? (
+        <ProfileEditForm data={data} onClose={() => setIsEditing(false)} />
+      ) : (
+        <Hero>
+          <CardBody>
+            <Badge label={formatText(approvalStatus)} tone={getApprovalTone(approvalStatus)} />
+            <h1>{gameTag}</h1>
+            <p>{fullName} / {formatNumber(currentXp)} XP</p>
+            <ProgressBar value={getProgressValue(data)} label="Level progression" />
+            <EditButtonRow>
+              <Button type="button" variant="secondary" onClick={() => setIsEditing(true)}>
+                Edit Profile
+              </Button>
+            </EditButtonRow>
+          </CardBody>
+        </Hero>
+      )}
 
       <Grid $columns={4}>
         {[
@@ -196,6 +209,12 @@ const Hero = styled(Card)`
   p {
     color: ${({ theme }) => theme.colors.textMuted};
   }
+`;
+
+const EditButtonRow = styled.div`
+  display: flex;
+  justify-content: center;
+  margin-top: 1rem;
 `;
 
 const MetricLabel = styled.span`
