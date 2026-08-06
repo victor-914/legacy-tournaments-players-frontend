@@ -76,6 +76,9 @@ export interface Standing {
   points: number;
   qualificationStatus: QualificationStatus;
   movement: "up" | "down" | "same";
+  qualifiedCycleId?: string;
+  qualifiedCycleName?: string;
+  qualifiedGroupName?: string;
 }
 
 export interface Tournament {
@@ -274,6 +277,19 @@ export interface PlayerGroupStage {
   totalPlayers: number;
   currentMatch?: GroupStageMatch;
   matches: GroupStageMatch[];
+  standings: Standing[];
+}
+
+export interface GroupStageHistoryEntry {
+  cycleId: string;
+  cycleName: string;
+  cycleNumber: number;
+  cycleStartDate?: string;
+  cycleEndDate?: string;
+  groupName?: string;
+  groupNumber?: number;
+  qualificationSlots: number;
+  qualified: boolean;
   standings: Standing[];
 }
 

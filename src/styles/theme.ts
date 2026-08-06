@@ -32,7 +32,9 @@ export const theme = {
   shadows: {
     glowGold: "0 0 32px rgba(212, 175, 55, 0.32)",
     glowGreen: "0 0 28px rgba(0, 200, 83, 0.28)",
-    panel: "0 24px 80px rgba(0, 0, 0, 0.42)"
+    panel: "0 24px 80px rgba(0, 0, 0, 0.42)",
+    neumorphicRaised: "-8px -8px 20px rgba(255, 255, 255, 0.03), 8px 8px 24px rgba(0, 0, 0, 0.55)",
+    neumorphicInset: "inset -6px -6px 14px rgba(255, 255, 255, 0.03), inset 6px 6px 18px rgba(0, 0, 0, 0.55)"
   },
   animations: {
     fast: "150ms ease",

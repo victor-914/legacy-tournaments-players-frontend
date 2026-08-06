@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" width="1600" height="900" role="img" aria-label="Legacy Esports Arena">
+  <defs>
+    <radialGradient id="glowA21" cx="22%" cy="28%" r="55%">
+      <stop offset="0%" stop-color="#D4AF37" stop-opacity="0.35" />
+      <stop offset="100%" stop-color="#D4AF37" stop-opacity="0" />
+    </radialGradient>
+    <radialGradient id="glowB21" cx="80%" cy="70%" r="55%">
+      <stop offset="0%" stop-color="#3A86FF" stop-opacity="0.28" />
+      <stop offset="100%" stop-color="#3A86FF" stop-opacity="0" />
+    </radialGradient>
+    <linearGradient id="base21" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0b0b0b" />
+      <stop offset="100%" stop-color="#151310" />
+    </linearGradient>
+  </defs>
+  <rect width="1600" height="900" fill="url(#base21)" />
+  <rect width="1600" height="900" fill="url(#glowA21)" />
+  <rect width="1600" height="900" fill="url(#glowB21)" />
+  <g opacity="0.5"><circle cx="276" cy="0" r="1.6" fill="#D4AF37" opacity="0.5" /><circle cx="621" cy="0" r="1.6" fill="#D4AF37" opacity="0.5" /><circle cx="310.5" cy="40.02" r="1.6" fill="#D4AF37" opacity="0.5" /><circle cx="655.5" cy="40.02" r="1.6" fill="#D4AF37" opacity="0.5" /><circle cx="276" cy="80.04" r="1.6" fill="#D4AF37" opacity="0.5" /><circle cx="621" cy="80.04" r="1.6" fill="#D4AF37" opacity="0.5" /><circle cx="310.5" cy="120.06" r="1.6" fill="#D4AF37" opacity="0.5" /><circle cx="655.5" cy="120.06" r="1.6" fill="#D4AF37" opacity="0.5" /><circle cx="276" cy="160.08" r="1.6" fill="#D4AF37" opacity="0.5" /><circle cx="621" cy="160.08" r="1.6" fill="#D4AF37" opacity="0.5" /><circle cx="310.5" cy="200.1" r="1.6" fill="#D4AF37" opacity="0.5" /><circle cx="655.5" cy="200.1" r="1.6" fill="#D4AF37" opacity="0.5" /><circle cx="276" cy="240.12" r="1.6" fill="#D4AF37" opacity="0.5" /><circle cx="621" cy="240.12" r="1.6" fill="#D4AF37" opacity="0.5" /><circle cx="310.5" cy="280.14" r="1.6" fill="#D4AF37" opacity="0.5" /><circle cx="655.5" cy="280.14" r="1.6" fill="#D4AF37" opacity="0.5" /></g>
+  <polygon points="880.0000000000001,0 1600,0 1600,540 1200,180" fill="#D4AF37" opacity="0.06" />
+  <polygon points="0,900 640,900 240,450 0,612" fill="#3A86FF" opacity="0.08" />
+</svg>

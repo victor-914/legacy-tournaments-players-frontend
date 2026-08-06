@@ -4,6 +4,7 @@ import type {
   ApiResponse,
   DashboardSummary,
   FindMatch,
+  GroupStageHistoryEntry,
   LiveMatch,
   Match,
   DisputeEvidencePayload,
@@ -30,6 +31,9 @@ export const mockApi = {
   },
   async getPlayerGroupStage(): Promise<PlayerGroupStage> {
     return unwrap(await apiClient.get<ApiResponse<PlayerGroupStage>>("/group-stage/me"));
+  },
+  async getPlayerGroupStageHistory(): Promise<GroupStageHistoryEntry[]> {
+    return unwrap(await apiClient.get<ApiResponse<GroupStageHistoryEntry[]>>("/group-stage/history"));
   },
   async getFindMatches(): Promise<FindMatch[]> {
     return unwrap(await apiClient.get<ApiResponse<FindMatch[]>>("/matches/find"));

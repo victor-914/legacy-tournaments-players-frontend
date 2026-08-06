@@ -11,15 +11,24 @@ interface LeaderboardTableProps {
   standings: Standing[];
   showQualificationLine?: boolean;
   qualificationSlots?: number;
+  faded?: boolean;
+  showCycleColumn?: boolean;
 }
 
-export function LeaderboardTable({ standings, showQualificationLine = true, qualificationSlots }: LeaderboardTableProps) {
+export function LeaderboardTable({
+  standings,
+  showQualificationLine = true,
+  qualificationSlots,
+  faded = false,
+  showCycleColumn = false
+}: LeaderboardTableProps) {
   const qualificationLabel = qualificationSlots && qualificationSlots > 0
     ? `TOP ${qualificationSlots} QUALIFY`
     : "QUALIFICATION SLOTS NOT SET";
+  const columnCount = showCycleColumn ? 8 : 7;
 
   return (
-    <TableWrap>
+    <TableWrap $faded={faded}>
       <thead>
         <tr>
           <th>Rank</th>
@@ -29,6 +38,7 @@ export function LeaderboardTable({ standings, showQualificationLine = true, qual
           <th>XP</th>
           <th>Pts</th>
           <th>Status</th>
+          {showCycleColumn ? <th>Qualified In</th> : null}
         </tr>
       </thead>
       <tbody>
@@ -54,11 +64,18 @@ export function LeaderboardTable({ standings, showQualificationLine = true, qual
             <td>
               <Badge status={standing.qualificationStatus} />
             </td>
+            {showCycleColumn ? (
+              <td>
+                {standing.qualifiedCycleName
+                  ? `${standing.qualifiedCycleName}${standing.qualifiedGroupName ? ` · ${standing.qualifiedGroupName}` : ""}`
+                  : "—"}
+              </td>
+            ) : null}
           </motion.tr>
         ))}
         {showQualificationLine ? (
           <tr>
-            <LineCell colSpan={7}>{qualificationLabel}</LineCell>
+            <LineCell colSpan={columnCount}>{qualificationLabel}</LineCell>
           </tr>
         ) : null}
       </tbody>
@@ -66,10 +83,11 @@ export function LeaderboardTable({ standings, showQualificationLine = true, qual
   );
 }
 
-const TableWrap = styled.table`
+const TableWrap = styled.table<{ $faded?: boolean }>`
   width: 100%;
   border-collapse: collapse;
   min-width: 720px;
+  ${({ $faded }) => $faded && "opacity: 0.55; filter: saturate(0.7);"}
 
   th,
   td {

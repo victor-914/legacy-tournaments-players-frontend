@@ -92,6 +92,15 @@ export function useLiveEvents() {
       pushNotification("Your approval status has been updated.");
     });
 
+    socket.on("cycleAdvanced", (payload?: { cycleName?: string }) => {
+      void queryClient.invalidateQueries({ queryKey: ["players-me"] });
+      void queryClient.invalidateQueries({ queryKey: ["player-group-stage"] });
+      void queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+      pushNotification(
+        payload?.cycleName ? `${payload.cycleName} has started. Jump back in!` : "A new cycle has started. Jump back in!"
+      );
+    });
+
     return () => {
       socket.off("standingsUpdated");
       socket.off("leaderboardUpdated");
@@ -115,6 +124,7 @@ export function useLiveEvents() {
       socket.off("match:admin_approved", invalidateMatchQueries);
       socket.off("match:admin_rejected", invalidateMatchQueries);
       socket.off("player:approval_updated");
+      socket.off("cycleAdvanced");
     };
   }, [pushNotification, queryClient]);
 }

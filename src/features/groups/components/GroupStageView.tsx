@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { CalendarDays, Clock3, Shield, Trophy } from "lucide-react";
 import styled, { css } from "styled-components";
@@ -9,15 +10,24 @@ import { LeaderboardTable } from "@/components/ui/LeaderboardTable";
 import { PageLoader } from "@/components/ui/PageLoader";
 import { PageStack, SectionTitle, TableScroller } from "@/components/ui/PagePrimitives";
 import { ProgressBar } from "@/components/ui/ProgressBar";
+import { Tabs } from "@/components/ui/Tabs";
 import { mockApi } from "@/services/mockApi";
 import { playerService } from "@/services/playerService";
 import type { PlayerGroupStage } from "@/types/domain";
 import { isApprovedPlayer } from "@/utils/approval";
 
+type GroupStageTab = "current" | "history";
+
 export function GroupStageView() {
   const meQuery = useQuery({ queryKey: ["players-me"], queryFn: playerService.getMe });
   const approved = isApprovedPlayer(meQuery.data);
+  const [activeTab, setActiveTab] = useState<GroupStageTab>("current");
   const { data, isLoading, isError } = useQuery({ queryKey: ["player-group-stage"], queryFn: mockApi.getPlayerGroupStage, enabled: approved });
+  const historyQuery = useQuery({
+    queryKey: ["player-group-stage-history"],
+    queryFn: mockApi.getPlayerGroupStageHistory,
+    enabled: approved && activeTab === "history"
+  });
 
   if (meQuery.isLoading || isLoading) {
     return <PageLoader label="Loading group stage" />;
@@ -46,43 +56,105 @@ export function GroupStageView() {
 
   const stats = getGroupStageStats(data);
   const groupProgress = getGroupProgress(data);
+  const history = historyQuery.data ?? [];
 
   return (
     <PageStack>
-      <StatsGrid>
-        {stats.map((stat) => {
-          const Icon = stat.icon;
+      <Tabs<GroupStageTab>
+        tabs={[
+          { label: "Current", value: "current" },
+          { label: "History", value: "history" }
+        ]}
+        active={activeTab}
+        onChange={setActiveTab}
+      />
 
-          return (
-            <StatCard key={stat.label} $tone={stat.tone}>
-              <StatBody>
-                <StatIcon $tone={stat.tone}>
-                  <Icon size={18} strokeWidth={2.4} />
-                </StatIcon>
-                <StatContent>
-                  <span>{stat.label}</span>
-                  <strong>{stat.value}</strong>
-                  <small>{stat.helper}</small>
-                </StatContent>
-              </StatBody>
-            </StatCard>
-          );
-        })}
-      </StatsGrid>
-      <ProgressBar value={groupProgress} label={data.groupCapacity ? "Group capacity" : "Group stage progress"} />
-      <Card>
-        <CardBody>
-          <SectionTitle>
-            <div>
-              <h2>Live Standings</h2>
-              <p>Every verified score can move the qualification line.</p>
-            </div>
-          </SectionTitle>
-          <TableScroller>
-            <LeaderboardTable standings={data.standings} qualificationSlots={data.qualificationSlots} />
-          </TableScroller>
-        </CardBody>
-      </Card>
+      {activeTab === "current" ? (
+        <>
+          <StatsGrid>
+            {stats.map((stat) => {
+              const Icon = stat.icon;
+
+              return (
+                <StatCard key={stat.label} $tone={stat.tone}>
+                  <StatBody>
+                    <StatIcon $tone={stat.tone}>
+                      <Icon size={18} strokeWidth={2.4} />
+                    </StatIcon>
+                    <StatContent>
+                      <span>{stat.label}</span>
+                      <strong>{stat.value}</strong>
+                      <small>{stat.helper}</small>
+                    </StatContent>
+                  </StatBody>
+                </StatCard>
+              );
+            })}
+          </StatsGrid>
+          <ProgressBar value={groupProgress} label={data.groupCapacity ? "Group capacity" : "Group stage progress"} />
+          <Card>
+            <CardBody>
+              <SectionTitle>
+                <div>
+                  <h2>Live Standings</h2>
+                  <p>Every verified score can move the qualification line.</p>
+                </div>
+              </SectionTitle>
+              <TableScroller>
+                <LeaderboardTable standings={data.standings} qualificationSlots={data.qualificationSlots} />
+              </TableScroller>
+            </CardBody>
+          </Card>
+        </>
+      ) : (
+        <HistoryStack>
+          {historyQuery.isLoading ? (
+            <Card>
+              <Notice>
+                <span>Loading your past cycles...</span>
+              </Notice>
+            </Card>
+          ) : null}
+          {historyQuery.isError ? (
+            <Card>
+              <Notice>
+                <strong>History unavailable</strong>
+                <span>We could not load your past cycles.</span>
+              </Notice>
+            </Card>
+          ) : null}
+          {!historyQuery.isLoading && !historyQuery.isError && history.length === 0 ? (
+            <Card>
+              <Notice>
+                <span>No completed cycles yet.</span>
+              </Notice>
+            </Card>
+          ) : null}
+          {history.map((entry) => (
+            <Card key={entry.cycleId}>
+              <CardBody>
+                <SectionTitle>
+                  <div>
+                    <h2>{entry.cycleName}</h2>
+                    <p>
+                      {formatDateRange(entry.cycleStartDate, entry.cycleEndDate)}
+                      {entry.groupName ? ` · ${entry.groupName}` : ""}
+                      {entry.qualified ? " · Qualified" : ""}
+                    </p>
+                  </div>
+                </SectionTitle>
+                <TableScroller>
+                  <LeaderboardTable
+                    standings={entry.standings}
+                    qualificationSlots={entry.qualificationSlots}
+                    faded
+                  />
+                </TableScroller>
+              </CardBody>
+            </Card>
+          ))}
+        </HistoryStack>
+      )}
     </PageStack>
   );
 }
@@ -204,6 +276,11 @@ const StatsGrid = styled.div`
   display: grid;
   gap: 0.9rem;
   grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+`;
+
+const HistoryStack = styled.div`
+  display: grid;
+  gap: 0.9rem;
 `;
 
 const Notice = styled(CardBody)`

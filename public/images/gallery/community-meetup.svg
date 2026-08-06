@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600" width="800" height="600" role="img" aria-label="Community Meetup">
+  <defs>
+    <linearGradient id="bg3" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0b0b0b" />
+      <stop offset="55%" stop-color="#161616" />
+      <stop offset="100%" stop-color="#1f1a10" />
+    </linearGradient>
+    <linearGradient id="beam3" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#00C853" stop-opacity="0" />
+      <stop offset="50%" stop-color="#00C853" stop-opacity="0.35" />
+      <stop offset="100%" stop-color="#00C853" stop-opacity="0" />
+    </linearGradient>
+  </defs>
+  <rect width="800" height="600" fill="url(#bg3)" />
+  <g opacity="0.7"><circle cx="138" cy="0" r="1.6" fill="#00C853" opacity="0.5" /><circle cx="483" cy="0" r="1.6" fill="#00C853" opacity="0.5" /><circle cx="172.5" cy="40.02" r="1.6" fill="#00C853" opacity="0.5" /><circle cx="517.5" cy="40.02" r="1.6" fill="#00C853" opacity="0.5" /><circle cx="138" cy="80.04" r="1.6" fill="#00C853" opacity="0.5" /><circle cx="483" cy="80.04" r="1.6" fill="#00C853" opacity="0.5" /><circle cx="172.5" cy="120.06" r="1.6" fill="#00C853" opacity="0.5" /><circle cx="517.5" cy="120.06" r="1.6" fill="#00C853" opacity="0.5" /><circle cx="138" cy="160.08" r="1.6" fill="#00C853" opacity="0.5" /><circle cx="483" cy="160.08" r="1.6" fill="#00C853" opacity="0.5" /><circle cx="172.5" cy="200.1" r="1.6" fill="#00C853" opacity="0.5" /><circle cx="517.5" cy="200.1" r="1.6" fill="#00C853" opacity="0.5" /><circle cx="138" cy="240.12" r="1.6" fill="#00C853" opacity="0.5" /><circle cx="483" cy="240.12" r="1.6" fill="#00C853" opacity="0.5" /><circle cx="172.5" cy="280.14" r="1.6" fill="#00C853" opacity="0.5" /><circle cx="517.5" cy="280.14" r="1.6" fill="#00C853" opacity="0.5" /></g>
+  <polygon points="0,600 200,600 40,330 0,372" fill="#00C853" opacity="0.08" />
+  <polygon points="800,0 800,240 520,48 656,0" fill="#00C853" opacity="0.1" />
+  <rect x="0" y="216" width="800" height="3" fill="url(#beam3)" />
+  <circle cx="744" cy="56" r="20" fill="rgba(255,255,255,0.06)" stroke="#00C853" stroke-opacity="0.6" />
+  <path d="M734 56 h20 M744 46 v20" stroke="#00C853" stroke-width="2" opacity="0.8" />
+</svg>

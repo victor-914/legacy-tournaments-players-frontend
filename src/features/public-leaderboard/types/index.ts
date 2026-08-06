@@ -10,6 +10,9 @@ export interface PublicLeaderboardEntry {
   xp: number;
   points: number;
   qualificationStatus: QualificationStatus;
+  qualifiedCycleId?: string;
+  qualifiedCycleName?: string;
+  qualifiedGroupName?: string;
 }
 
 export interface PublicLeaderboardData {

@@ -65,7 +65,7 @@ export function GrandFinaleLeaderboardView() {
             <EmptyState>No championship qualifiers are available yet.</EmptyState>
           ) : (
             <TableScroller>
-              <LeaderboardTable standings={standings} showQualificationLine={false} />
+              <LeaderboardTable standings={standings} showQualificationLine={false} showCycleColumn />
             </TableScroller>
           )}
         </CardBody>

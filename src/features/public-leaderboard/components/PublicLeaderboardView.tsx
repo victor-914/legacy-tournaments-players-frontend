@@ -86,7 +86,7 @@ export function PublicLeaderboardView() {
             <EmptyState>No leaderboard data is available yet.</EmptyState>
           ) : (
             <TableScroller>
-              <LeaderboardTable standings={standings} showQualificationLine={false} />
+              <LeaderboardTable standings={standings} showQualificationLine={false} showCycleColumn />
             </TableScroller>
           )}
         </CardBody>
@@ -114,7 +114,10 @@ function toStandings(entries: PublicLeaderboardEntry[]): Standing[] {
     xp: entry.xp,
     points: entry.points,
     qualificationStatus: entry.qualificationStatus,
-    movement: "same"
+    movement: "same",
+    qualifiedCycleId: entry.qualifiedCycleId,
+    qualifiedCycleName: entry.qualifiedCycleName,
+    qualifiedGroupName: entry.qualifiedGroupName
   }));
 }
 
