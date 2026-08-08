@@ -1,64 +1,66 @@
 "use client";
 
 import { useEffect } from "react";
-import { keepPreviousData, useQuery } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import styled from "styled-components";
 import { publicLeaderboardService } from "@/features/public-leaderboard/services/publicLeaderboardService";
+import type { PublicCycleSummary } from "@/features/public-leaderboard/types";
 
-interface PublicGroupSelectorProps {
-  cycleId?: string | null;
-  selectedGroupId: string | null;
-  onSelect: (groupId: string) => void;
+interface PublicCycleSelectorProps {
+  selectedCycleId: string | null;
+  onSelect: (cycle: PublicCycleSummary) => void;
 }
 
-const GROUPS_STALE_TIME_MS = 60_000;
+const CYCLES_STALE_TIME_MS = 60_000;
 
-export function PublicGroupSelector({ cycleId, selectedGroupId, onSelect }: PublicGroupSelectorProps) {
-  const { data, isLoading, isError, isPlaceholderData } = useQuery({
-    queryKey: ["public-groups", cycleId ?? null],
-    queryFn: () => publicLeaderboardService.getPublicGroups(cycleId ?? undefined),
-    staleTime: GROUPS_STALE_TIME_MS,
-    placeholderData: keepPreviousData
+export function PublicCycleSelector({ selectedCycleId, onSelect }: PublicCycleSelectorProps) {
+  const { data, isLoading, isError } = useQuery({
+    queryKey: ["public-cycles"],
+    queryFn: () => publicLeaderboardService.getPublicCycles(),
+    staleTime: CYCLES_STALE_TIME_MS
   });
 
-  const groups = data ?? [];
+  const cycles = data ?? [];
 
   useEffect(() => {
-    // Skip while `data` is still the previous cycle's placeholder — selecting from it
-    // would default-select a group id that belongs to the wrong cycle.
-    if (isPlaceholderData) {
+    if (selectedCycleId || cycles.length === 0) {
       return;
     }
 
-    if (!selectedGroupId && groups.length > 0) {
-      onSelect(groups[0].id);
+    const defaultCycle =
+      cycles.find((cycle) => cycle.status === "active") ??
+      [...cycles].sort((a, b) => b.cycleNumber - a.cycleNumber)[0];
+
+    if (defaultCycle) {
+      onSelect(defaultCycle);
     }
-  }, [groups, selectedGroupId, onSelect, isPlaceholderData]);
+  }, [cycles, selectedCycleId, onSelect]);
 
   if (isLoading) {
-    return <Placeholder>Loading groups...</Placeholder>;
+    return <Placeholder>Loading cycles...</Placeholder>;
   }
 
   if (isError) {
-    return <Placeholder>Groups unavailable</Placeholder>;
+    return <Placeholder>Cycles unavailable</Placeholder>;
   }
 
-  if (groups.length === 0) {
-    return <Placeholder>No active groups yet.</Placeholder>;
+  if (cycles.length <= 1) {
+    return null;
   }
 
   return (
-    <TabList role="tablist" aria-label="Groups">
-      {groups.map((group) => (
+    <TabList role="tablist" aria-label="Cycles">
+      {cycles.map((cycle) => (
         <TabButton
-          key={group.id}
+          key={cycle.id}
           type="button"
           role="tab"
-          aria-selected={group.id === selectedGroupId}
-          data-active={group.id === selectedGroupId}
-          onClick={() => onSelect(group.id)}
+          aria-selected={cycle.id === selectedCycleId}
+          data-active={cycle.id === selectedCycleId}
+          $muted={cycle.status !== "active"}
+          onClick={() => onSelect(cycle)}
         >
-          {group.name || `Group ${group.groupNumber}`}
+          {cycle.name || `Cycle ${cycle.cycleNumber}`}
         </TabButton>
       ))}
     </TabList>
@@ -86,7 +88,7 @@ const TabList = styled.div`
   }
 `;
 
-const TabButton = styled.button`
+const TabButton = styled.button<{ $muted: boolean }>`
   flex: none;
   border: 1px solid ${({ theme }) => theme.colors.border};
   border-radius: 999px;
@@ -97,6 +99,7 @@ const TabButton = styled.button`
   font-size: 0.78rem;
   cursor: pointer;
   transition: ${({ theme }) => theme.animations.fast};
+  opacity: ${({ $muted }) => ($muted ? 0.6 : 1)};
 
   @media (min-width: ${({ theme }) => theme.breakpoints.sm}) {
     padding: 0.55rem 1rem;
@@ -108,6 +111,7 @@ const TabButton = styled.button`
     background: ${({ theme }) => theme.colors.goldSoft};
     border-color: ${({ theme }) => theme.colors.borderStrong};
     box-shadow: ${({ theme }) => theme.shadows.glowGold};
+    opacity: 1;
   }
 `;
 

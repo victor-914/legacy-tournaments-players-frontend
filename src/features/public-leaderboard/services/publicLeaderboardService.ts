@@ -1,6 +1,7 @@
 import { publicApiClient } from "@/services/publicApiClient";
 import type { ApiResponse } from "@/types/domain";
 import type {
+  PublicCycleSummary,
   PublicGroupLeaderboardData,
   PublicGroupSummary,
   PublicLeaderboardData,
@@ -10,6 +11,10 @@ import type {
 export const publicLeaderboardService = {
   async getPublicLeaderboard(params?: PublicLeaderboardParams): Promise<PublicLeaderboardData> {
     const response = await publicApiClient.get<ApiResponse<PublicLeaderboardData>>("/public/leaderboard", { params });
+    return response.data.data;
+  },
+  async getPublicCycles(): Promise<PublicCycleSummary[]> {
+    const response = await publicApiClient.get<ApiResponse<PublicCycleSummary[]>>("/public/cycles");
     return response.data.data;
   },
   async getPublicGroups(cycleId?: string): Promise<PublicGroupSummary[]> {

@@ -36,6 +36,13 @@ export interface PublicGroupSummary {
   groupNumber: number;
 }
 
+export interface PublicCycleSummary {
+  id: string;
+  name: string;
+  cycleNumber: number;
+  status: "active" | "completed";
+}
+
 export interface PublicGroupLeaderboardEntry {
   id: string;
   playerId: string;

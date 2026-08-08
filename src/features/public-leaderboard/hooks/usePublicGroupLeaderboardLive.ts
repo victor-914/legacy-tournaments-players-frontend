@@ -8,11 +8,13 @@ interface StandingsUpdatedPayload {
   groupId?: string;
 }
 
-export function usePublicGroupLeaderboardLive(groupId: string | null) {
+export function usePublicGroupLeaderboardLive(groupId: string | null, enabled = true) {
   const queryClient = useQueryClient();
 
   useEffect(() => {
-    if (!groupId) {
+    // A completed cycle's standings never change again, so skip subscribing entirely
+    // when viewing a past cycle's group — no point holding a live socket room for it.
+    if (!groupId || !enabled) {
       return;
     }
 
@@ -32,5 +34,5 @@ export function usePublicGroupLeaderboardLive(groupId: string | null) {
       socket.emit("unsubscribeGroupLeaderboard", { groupId });
       publicSocketClient.release();
     };
-  }, [groupId, queryClient]);
+  }, [groupId, enabled, queryClient]);
 }

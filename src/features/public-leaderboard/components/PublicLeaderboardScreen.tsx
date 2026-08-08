@@ -5,12 +5,26 @@ import Image from "next/image";
 import Link from "next/link";
 import styled from "styled-components";
 import { PageStack, SectionTitle } from "@/components/ui/PagePrimitives";
+import { PublicCycleSelector } from "@/features/public-leaderboard/components/PublicCycleSelector";
 import { PublicGroupLeaderboardView } from "@/features/public-leaderboard/components/PublicGroupLeaderboardView";
 import { PublicGroupSelector } from "@/features/public-leaderboard/components/PublicGroupSelector";
 import { PublicLeaderboardView } from "@/features/public-leaderboard/components/PublicLeaderboardView";
+import type { PublicCycleSummary } from "@/features/public-leaderboard/types";
 
 export function PublicLeaderboardScreen() {
+  const [selectedCycle, setSelectedCycle] = useState<PublicCycleSummary | null>(null);
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
+
+  function handleSelectCycle(cycle: PublicCycleSummary) {
+    if (cycle.id === selectedCycle?.id) {
+      return;
+    }
+
+    setSelectedCycle(cycle);
+    // A group id from the previous cycle must not carry over — different cycles
+    // have entirely different groups.
+    setSelectedGroupId(null);
+  }
 
   return (
     <PageWrap>
@@ -31,11 +45,25 @@ export function PublicLeaderboardScreen() {
             <SectionTitle>
               <div>
                 <h2>Group Leaderboards</h2>
-                <p>Select a group to see its live standings.</p>
+                <p>Select a cycle and group to see its standings.</p>
               </div>
             </SectionTitle>
-            <PublicGroupSelector selectedGroupId={selectedGroupId} onSelect={setSelectedGroupId} />
-            {selectedGroupId ? <PublicGroupLeaderboardView groupId={selectedGroupId} /> : null}
+            <PublicCycleSelector selectedCycleId={selectedCycle?.id ?? null} onSelect={handleSelectCycle} />
+            <PublicGroupSelector
+              // Omit cycleId for the active cycle (including before cycles have
+              // loaded) so this reuses the same "public-groups" cache entry the
+              // page's initial, cycle-agnostic fetch already primed — only a
+              // genuinely past cycle needs its own explicit cache key.
+              cycleId={selectedCycle && selectedCycle.status !== "active" ? selectedCycle.id : null}
+              selectedGroupId={selectedGroupId}
+              onSelect={setSelectedGroupId}
+            />
+            {selectedGroupId ? (
+              <PublicGroupLeaderboardView
+                groupId={selectedGroupId}
+                isActiveCycle={selectedCycle ? selectedCycle.status === "active" : true}
+              />
+            ) : null}
           </GroupSection>
         </PageStack>
       </Content>

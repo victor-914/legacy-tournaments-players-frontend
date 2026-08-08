@@ -1,6 +1,6 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import styled from "styled-components";
 import { Card, CardBody } from "@/components/ui/Card";
 import { LeaderboardTable } from "@/components/ui/LeaderboardTable";
@@ -10,16 +10,21 @@ import { usePublicGroupLeaderboardLive } from "@/features/public-leaderboard/hoo
 import type { PublicGroupLeaderboardEntry } from "@/features/public-leaderboard/types";
 import type { Standing } from "@/types/domain";
 
+const GROUP_LEADERBOARD_STALE_TIME_MS = 15_000;
+
 interface PublicGroupLeaderboardViewProps {
   groupId: string;
+  isActiveCycle?: boolean;
 }
 
-export function PublicGroupLeaderboardView({ groupId }: PublicGroupLeaderboardViewProps) {
-  usePublicGroupLeaderboardLive(groupId);
+export function PublicGroupLeaderboardView({ groupId, isActiveCycle = true }: PublicGroupLeaderboardViewProps) {
+  usePublicGroupLeaderboardLive(groupId, isActiveCycle);
 
   const { data, isLoading, isError } = useQuery({
     queryKey: ["public-group-leaderboard", groupId],
-    queryFn: () => publicLeaderboardService.getPublicGroupLeaderboard(groupId)
+    queryFn: () => publicLeaderboardService.getPublicGroupLeaderboard(groupId),
+    staleTime: GROUP_LEADERBOARD_STALE_TIME_MS,
+    placeholderData: keepPreviousData
   });
 
   if (isLoading) {
