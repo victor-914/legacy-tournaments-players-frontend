@@ -169,6 +169,9 @@ export interface LiveMatch {
   loserId?: string;
   resultId?: string;
   scheduledAt?: string;
+  /** Deadline for the losing player to accept or reject a submitted result. */
+  resultResponseDueAt?: string;
+  disputeOrigin?: "player_rejected" | "response_timeout" | "admin";
 }
 
 export type MockLiveMatchStatus = "ready" | "in_progress" | "submitted" | "disputed" | "completed";

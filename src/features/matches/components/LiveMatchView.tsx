@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AlertTriangle, CheckCircle2, Clock, Copy, Send } from "lucide-react";
 import styled, { css } from "styled-components";
@@ -36,6 +36,10 @@ export function LiveMatchView({ matchId }: { matchId: string }) {
     enabled: approved
   });
   const pastMatchesQuery = useQuery({ queryKey: ["past-matches"], queryFn: mockApi.getPastMatches, enabled: approved });
+
+  const refreshMatch = useCallback(() => {
+    void queryClient.invalidateQueries({ queryKey: ["live-match", matchId] });
+  }, [queryClient, matchId]);
 
   const createRoomCode = useMutation({
     mutationFn: () => mockApi.createRoomCode(matchId),
@@ -185,9 +189,28 @@ export function LiveMatchView({ matchId }: { matchId: string }) {
         onSubmit={handleSubmit}
       />
 
+      {match.status === "played" && !isLoser ? (
+        <ActionCard>
+          <CardBody>
+            <ResultDeadlineNotice
+              dueAt={match.resultResponseDueAt}
+              isLoser={false}
+              opponentTag={match.opponent.gamerTag}
+              onExpire={refreshMatch}
+            />
+          </CardBody>
+        </ActionCard>
+      ) : null}
+
       {match.status === "played" && isLoser ? (
         <ActionCard>
           <CardBody>
+            <ResultDeadlineNotice
+              dueAt={match.resultResponseDueAt}
+              isLoser
+              opponentTag={match.opponent.gamerTag}
+              onExpire={refreshMatch}
+            />
             <SectionTitle>
               <div>
                 <h2>Result Confirmation</h2>
@@ -602,6 +625,94 @@ function PastMatchesList({ matches, isLoading }: { matches: PastMatch[]; isLoadi
         )}
       </CardBody>
     </Card>
+  );
+}
+
+/**
+ * Ticks once a second toward `deadline`. Returns undefined when there is no
+ * deadline, and 0 once it has elapsed.
+ */
+function useCountdown(deadline?: string): number | undefined {
+  const target = deadline ? new Date(deadline).getTime() : undefined;
+  const [remaining, setRemaining] = useState<number | undefined>(() =>
+    target === undefined || Number.isNaN(target) ? undefined : Math.max(0, target - Date.now())
+  );
+
+  useEffect(() => {
+    if (target === undefined || Number.isNaN(target)) {
+      setRemaining(undefined);
+      return;
+    }
+
+    const tick = () => setRemaining(Math.max(0, target - Date.now()));
+    tick();
+    const timer = window.setInterval(tick, 1000);
+    return () => window.clearInterval(timer);
+  }, [target]);
+
+  return remaining;
+}
+
+function formatCountdown(ms: number): string {
+  const totalSeconds = Math.max(0, Math.ceil(ms / 1000));
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return `${minutes}:${String(seconds).padStart(2, "0")}`;
+}
+
+function ResultDeadlineNotice({
+  dueAt,
+  isLoser,
+  opponentTag,
+  onExpire
+}: {
+  dueAt?: string;
+  isLoser: boolean;
+  opponentTag: string;
+  onExpire: () => void;
+}) {
+  const remaining = useCountdown(dueAt);
+  const expired = remaining !== undefined && remaining <= 0;
+
+  // Once the window closes the server moves the match to disputed on its next
+  // sweep, so refetch instead of leaving a stale "awaiting confirmation" view.
+  useEffect(() => {
+    if (!expired) {
+      return;
+    }
+    onExpire();
+    const retry = window.setInterval(onExpire, 15000);
+    return () => window.clearInterval(retry);
+  }, [expired, onExpire]);
+
+  if (remaining === undefined) {
+    return null;
+  }
+
+  if (expired) {
+    return (
+      <ResultState $tone="danger">
+        <AlertTriangle size={22} />
+        <div>
+          <h3>Response window closed</h3>
+          <p>This match is being sent to admin review. Hang tight.</p>
+        </div>
+      </ResultState>
+    );
+  }
+
+  return (
+    <ResultState $tone={isLoser ? "danger" : "pending"}>
+      <Clock size={22} />
+      <div>
+        <h3>{isLoser ? `Respond within ${formatCountdown(remaining)}` : `Waiting on ${opponentTag}`}</h3>
+        <p>
+          {isLoser
+            ? "Accept or reject this result before the timer runs out, or it goes to admin review automatically."
+            : `${formatCountdown(remaining)} left for ${opponentTag} to confirm. After that the match goes to admin review automatically.`}
+        </p>
+      </div>
+    </ResultState>
   );
 }
 
