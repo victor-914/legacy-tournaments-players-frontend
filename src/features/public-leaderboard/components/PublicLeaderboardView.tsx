@@ -42,6 +42,7 @@ export function PublicLeaderboardView() {
           <h1>Public Leaderboard</h1>
           <p>
             {data?.seasonName ? `${data.seasonName} · ` : ""}
+            {data?.cycleName ? `${data.cycleName} · ` : ""}
             {entries.length} ranked player{entries.length === 1 ? "" : "s"}
             {data?.generatedAt ? ` · updated ${formatGeneratedAt(data.generatedAt)}` : ""}
           </p>
@@ -78,15 +79,20 @@ export function PublicLeaderboardView() {
         <CardBody>
           <SectionTitle>
             <div>
-              <h2>Leaderboard</h2>
+              <h2>{data?.cycleName ? `${data.cycleName} Qualifiers` : "Leaderboard"}</h2>
               <p>Ranked by points, wins, and score difference.</p>
             </div>
           </SectionTitle>
           {standings.length === 0 && !isError ? (
-            <EmptyState>No leaderboard data is available yet.</EmptyState>
+            <EmptyState>
+              Rankings are published when a cycle ends. Check back once the current cycle is
+              complete.
+            </EmptyState>
           ) : (
             <TableScroller>
-              <LeaderboardTable standings={standings} showQualificationLine={false} showCycleColumn />
+              {/* Every row is from the same cycle now, so the per-row cycle
+                  column would just repeat the heading above. */}
+              <LeaderboardTable standings={standings} showQualificationLine={false} />
             </TableScroller>
           )}
         </CardBody>

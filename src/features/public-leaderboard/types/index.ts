@@ -20,8 +20,11 @@ export interface PublicLeaderboardData {
   page: number;
   limit: number;
   total: number;
-  seasonId: string;
-  seasonName: string;
+  seasonId?: string;
+  seasonName?: string;
+  cycleId?: string;
+  cycleName?: string;
+  cycleNumber?: number;
   generatedAt: string;
 }
 
