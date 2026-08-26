@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import styled from "styled-components";
 import { publicLeaderboardService } from "@/features/public-leaderboard/services/publicLeaderboardService";
@@ -20,7 +20,7 @@ export function PublicCycleSelector({ selectedCycleId, onSelect }: PublicCycleSe
     staleTime: CYCLES_STALE_TIME_MS
   });
 
-  const cycles = data ?? [];
+  const cycles = useMemo(() => data ?? [], [data]);
 
   useEffect(() => {
     if (selectedCycleId || cycles.length === 0) {

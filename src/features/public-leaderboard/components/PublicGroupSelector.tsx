@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import styled from "styled-components";
 import { publicLeaderboardService } from "@/features/public-leaderboard/services/publicLeaderboardService";
@@ -21,7 +21,7 @@ export function PublicGroupSelector({ cycleId, selectedGroupId, onSelect }: Publ
     placeholderData: keepPreviousData
   });
 
-  const groups = data ?? [];
+  const groups = useMemo(() => data ?? [], [data]);
 
   useEffect(() => {
     // Skip while `data` is still the previous cycle's placeholder — selecting from it

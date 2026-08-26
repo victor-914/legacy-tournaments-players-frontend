@@ -2,7 +2,6 @@
 
 import { motion } from "framer-motion";
 import styled from "styled-components";
-import { AvatarImage } from "@/components/ui/AvatarImage";
 import { Badge } from "@/components/ui/Badge";
 import type { Standing } from "@/types/domain";
 import { formatNumber } from "@/utils/format";

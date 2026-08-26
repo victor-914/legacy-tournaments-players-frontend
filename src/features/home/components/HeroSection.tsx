@@ -4,15 +4,13 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import styled from "styled-components";
+import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/Button";
-import { tournaments } from "@/constants/mockData";
-import { TournamentStatus } from "@/types/domain";
+import { publicLeaderboardService } from "@/features/public-leaderboard/services/publicLeaderboardService";
 
-const STATS = [
-  { label: "Live Tournaments", value: tournaments.filter((t) => t.status !== TournamentStatus.Completed).length },
-  { label: "Active Players", value: 3400 },
-  { label: "Prize Pool Paid Out", value: 25000, prefix: "$" }
-];
+// Not sourced from the API: there is no public endpoint for prize money, so
+// this stays an editorial figure.
+const PRIZE_POOL_TO_BE_PAID_OUT = 25000;
 
 function useCountUp(target: number, durationMs = 1400) {
   const [value, setValue] = useState(0);
@@ -35,14 +33,31 @@ function useCountUp(target: number, durationMs = 1400) {
   return value;
 }
 
-function StatChip({ label, value, prefix }: { label: string; value: number; prefix?: string }) {
-  const animated = useCountUp(value);
+function StatChip({
+  label,
+  value,
+  prefix,
+  suffix
+}: {
+  label: string;
+  // Undefined while the public endpoints are still loading, or if they failed.
+  value?: number;
+  prefix?: string;
+  suffix?: string;
+}) {
+  const animated = useCountUp(value ?? 0);
   return (
     <Chip>
       <strong>
-        {prefix}
-        {animated.toLocaleString()}
-        {value >= 1000 ? "+" : ""}
+        {typeof value === "number" ? (
+          <>
+            {prefix}
+            {animated.toLocaleString()}
+            {suffix}
+          </>
+        ) : (
+          "—"
+        )}
       </strong>
       <span>{label}</span>
     </Chip>
@@ -50,6 +65,18 @@ function StatChip({ label, value, prefix }: { label: string; value: number; pref
 }
 
 export function HeroSection() {
+  const cyclesQuery = useQuery({
+    queryKey: ["public-cycles"],
+    queryFn: () => publicLeaderboardService.getPublicCycles()
+  });
+  const leaderboardQuery = useQuery({
+    queryKey: ["public-leaderboard"],
+    queryFn: () => publicLeaderboardService.getPublicLeaderboard()
+  });
+
+  const liveTournaments = cyclesQuery.data?.filter((cycle) => cycle.status === "active").length;
+  const activePlayers = leaderboardQuery.data?.total;
+
   return (
     <Wrap>
       <Content>
@@ -99,9 +126,9 @@ export function HeroSection() {
           transition={{ duration: 0.6, delay: 0.32, ease: "easeOut" }}
         >
           <Stats>
-            {STATS.map((stat) => (
-              <StatChip key={stat.label} label={stat.label} value={stat.value} prefix={stat.prefix} />
-            ))}
+            <StatChip label="Live Tournaments" value={liveTournaments} />
+            <StatChip label="Ranked Players" value={activePlayers} />
+            <StatChip label="Prize Pool To Be Paid Out" value={PRIZE_POOL_TO_BE_PAID_OUT} prefix="$" />
           </Stats>
         </motion.div>
       </Content>

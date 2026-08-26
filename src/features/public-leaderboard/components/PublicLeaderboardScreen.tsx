@@ -1,9 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import Image from "next/image";
-import Link from "next/link";
 import styled from "styled-components";
+import { PublicShell } from "@/components/public/PublicShell";
 import { PageStack, SectionTitle } from "@/components/ui/PagePrimitives";
 import { PublicCycleSelector } from "@/features/public-leaderboard/components/PublicCycleSelector";
 import { PublicGroupLeaderboardView } from "@/features/public-leaderboard/components/PublicGroupLeaderboardView";
@@ -27,16 +26,7 @@ export function PublicLeaderboardScreen() {
   }
 
   return (
-    <PageWrap>
-      <TopBar>
-        <Brand href="/dashboard">
-          <LogoMark>
-            <Image src="/legacy_logo.jpeg" alt="Legacy Gaming" width={40} height={40} />
-          </LogoMark>
-          <span>Legacy Gaming</span>
-        </Brand>
-      </TopBar>
-
+    <PublicShell>
       <Content>
         <PageStack>
           <PublicLeaderboardView />
@@ -67,57 +57,9 @@ export function PublicLeaderboardScreen() {
           </GroupSection>
         </PageStack>
       </Content>
-    </PageWrap>
+    </PublicShell>
   );
 }
-
-const PageWrap = styled.div`
-  min-height: 100vh;
-  background: ${({ theme }) => theme.colors.background};
-`;
-
-const TopBar = styled.header`
-  position: sticky;
-  top: 0;
-  z-index: 20;
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  min-height: 4.5rem;
-  padding: 0.9rem 1rem;
-  background: rgba(11, 11, 11, 0.74);
-  border-bottom: 1px solid ${({ theme }) => theme.colors.border};
-  backdrop-filter: blur(18px);
-
-  @media (min-width: ${({ theme }) => theme.breakpoints.md}) {
-    padding: 0.9rem 1.5rem;
-  }
-`;
-
-const Brand = styled(Link)`
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  font-size: 1rem;
-  font-weight: 900;
-  color: ${({ theme }) => theme.colors.text};
-`;
-
-const LogoMark = styled.div`
-  width: 2.5rem;
-  height: 2.5rem;
-  flex: none;
-  overflow: hidden;
-  border-radius: 50%;
-  box-shadow: ${({ theme }) => theme.shadows.glowGold};
-
-  img {
-    display: block;
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-  }
-`;
 
 const Content = styled.div`
   width: min(100%, 1280px);

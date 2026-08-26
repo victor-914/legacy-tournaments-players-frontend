@@ -25,7 +25,8 @@ export const theme = {
     "2xl": "3rem"
   },
   typography: {
-    fontFamily: "'Inter', 'Segoe UI', Arial, sans-serif",
+    fontFamily: "var(--font-body), 'Inter', 'Segoe UI', Arial, sans-serif",
+    displayFontFamily: "var(--font-display), 'Impact', 'Haettenschweiler', sans-serif",
     headingWeight: 800,
     bodyWeight: 500
   },

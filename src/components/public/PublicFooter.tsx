@@ -1,14 +1,14 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
-import { Instagram, Twitch, Twitter, Youtube } from "lucide-react";
+import { Twitter } from "lucide-react";
+import { TikTokIcon } from "@/components/ui/TikTokIcon";
 import styled from "styled-components";
 
 const SITE_LINKS = [
   { label: "Home", href: "/" },
-  { label: "Tournaments", href: "/#tournaments" },
-  { label: "About", href: "/about" },
-  { label: "Contact", href: "/contact" }
+  { label: "Tournaments", href: "/#tournaments" }
 ];
 
 const ACCOUNT_LINKS = [
@@ -18,10 +18,8 @@ const ACCOUNT_LINKS = [
 ];
 
 const SOCIALS = [
-  { label: "Twitter", href: "https://twitter.com", icon: Twitter },
-  { label: "Twitch", href: "https://twitch.tv", icon: Twitch },
-  { label: "YouTube", href: "https://youtube.com", icon: Youtube },
-  { label: "Instagram", href: "https://instagram.com", icon: Instagram }
+  { label: "X", href: "https://x.com/legacygaming_ng", icon: Twitter },
+  { label: "TikTok", href: "https://tiktok.com/@legacygamingng", icon: TikTokIcon }
 ];
 
 export function PublicFooter() {
@@ -32,9 +30,9 @@ export function PublicFooter() {
       <Inner>
         <Columns>
           <BrandCol>
-            <BrandRow>
+            <BrandRow href="/">
               <LogoMark>
-                <img src="/legacy_logo.jpeg" alt="Legacy Esports" width={36} height={36} />
+                <Image src="/legacy_logo.jpeg" alt="Legacy Esports" width={36} height={36} />
               </LogoMark>
               <span>Legacy Esports</span>
             </BrandRow>
@@ -106,7 +104,7 @@ const BrandCol = styled.div`
   }
 `;
 
-const BrandRow = styled.div`
+const BrandRow = styled(Link)`
   display: flex;
   align-items: center;
   gap: 0.6rem;

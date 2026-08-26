@@ -7,6 +7,7 @@ import { AlertTriangle, LockKeyhole, ShieldCheck } from "lucide-react";
 import styled from "styled-components";
 import { Button } from "@/components/ui/Button";
 import { Card, CardBody } from "@/components/ui/Card";
+import { PublicShell } from "@/components/public/PublicShell";
 import { PasswordResetError, authService } from "@/services/authService";
 
 function getResetErrorMessage(error: unknown) {
@@ -66,87 +67,89 @@ export function ResetPasswordView() {
   }
 
   return (
-    <ResetShell>
-      <ResetCard>
-        <CardBody>
-          <Hero>
-            <ShieldCheck size={34} />
-            <span>Account Recovery</span>
-            <h1>Reset password</h1>
-            <p>Choose a new password for your player account.</p>
-          </Hero>
+    <PublicShell>
+      <ResetShell>
+        <ResetCard>
+          <CardBody>
+            <Hero>
+              <ShieldCheck size={34} />
+              <span>Account Recovery</span>
+              <h1>Reset password</h1>
+              <p>Choose a new password for your player account.</p>
+            </Hero>
 
-          {isSubmitted ? (
-            <>
-              <SuccessPanel role="status">Your password has been reset. You can now log in with your new password.</SuccessPanel>
-              <Button type="button" fullWidth onClick={() => router.replace("/login")}>
-                Go to login
-              </Button>
-            </>
-          ) : (
-            <Form onSubmit={submitReset}>
-              <Field>
-                <span>New password</span>
-                <Control>
-                  <LockKeyhole size={18} />
-                  <input
-                    autoComplete="new-password"
-                    type="password"
-                    value={password}
-                    onChange={(event) => {
-                      setPassword(event.target.value);
-                      setError(undefined);
-                    }}
-                  />
-                </Control>
-              </Field>
+            {isSubmitted ? (
+              <>
+                <SuccessPanel role="status">Your password has been reset. You can now log in with your new password.</SuccessPanel>
+                <Button type="button" fullWidth onClick={() => router.replace("/login")}>
+                  Go to login
+                </Button>
+              </>
+            ) : (
+              <Form onSubmit={submitReset}>
+                <Field>
+                  <span>New password</span>
+                  <Control>
+                    <LockKeyhole size={18} />
+                    <input
+                      autoComplete="new-password"
+                      type="password"
+                      value={password}
+                      onChange={(event) => {
+                        setPassword(event.target.value);
+                        setError(undefined);
+                      }}
+                    />
+                  </Control>
+                </Field>
 
-              <Field>
-                <span>Confirm new password</span>
-                <Control>
-                  <LockKeyhole size={18} />
-                  <input
-                    autoComplete="new-password"
-                    type="password"
-                    value={confirmPassword}
-                    onChange={(event) => {
-                      setConfirmPassword(event.target.value);
-                      setError(undefined);
-                    }}
-                  />
-                </Control>
-              </Field>
+                <Field>
+                  <span>Confirm new password</span>
+                  <Control>
+                    <LockKeyhole size={18} />
+                    <input
+                      autoComplete="new-password"
+                      type="password"
+                      value={confirmPassword}
+                      onChange={(event) => {
+                        setConfirmPassword(event.target.value);
+                        setError(undefined);
+                      }}
+                    />
+                  </Control>
+                </Field>
 
-              {!token ? (
-                <ErrorPanel role="alert">
-                  <AlertTriangle size={18} />
-                  <span>This reset link is invalid or has expired. Request a new one.</span>
-                </ErrorPanel>
-              ) : error ? (
-                <ErrorPanel role="alert">
-                  <AlertTriangle size={18} />
-                  <span>{error}</span>
-                </ErrorPanel>
-              ) : null}
+                {!token ? (
+                  <ErrorPanel role="alert">
+                    <AlertTriangle size={18} />
+                    <span>This reset link is invalid or has expired. Request a new one.</span>
+                  </ErrorPanel>
+                ) : error ? (
+                  <ErrorPanel role="alert">
+                    <AlertTriangle size={18} />
+                    <span>{error}</span>
+                  </ErrorPanel>
+                ) : null}
 
-              <Button type="submit" fullWidth disabled={isSubmitting || !token}>
-                {isSubmitting ? "Resetting..." : "Reset password"}
-              </Button>
-            </Form>
-          )}
+                <Button type="submit" fullWidth disabled={isSubmitting || !token}>
+                  {isSubmitting ? "Resetting..." : "Reset password"}
+                </Button>
+              </Form>
+            )}
 
-          <MetaRow>
-            <Link href="/forgot-password">Request a new link</Link>
-            <Link href="/login">Back to login</Link>
-          </MetaRow>
-        </CardBody>
-      </ResetCard>
-    </ResetShell>
+            <MetaRow>
+              <Link href="/forgot-password">Request a new link</Link>
+              <Link href="/login">Back to login</Link>
+            </MetaRow>
+          </CardBody>
+        </ResetCard>
+      </ResetShell>
+    </PublicShell>
   );
 }
 
-const ResetShell = styled.main`
-  min-height: 100vh;
+const ResetShell = styled.section`
+  min-height: calc(100vh - 4.5rem);
   display: grid;
   place-items: center;
   padding: 1rem;

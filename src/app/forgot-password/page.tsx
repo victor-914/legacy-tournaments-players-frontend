@@ -6,6 +6,7 @@ import { AlertTriangle, Mail, ShieldCheck } from "lucide-react";
 import styled from "styled-components";
 import { Button } from "@/components/ui/Button";
 import { Card, CardBody } from "@/components/ui/Card";
+import { PublicShell } from "@/components/public/PublicShell";
 import { authService } from "@/services/authService";
 
 export default function ForgotPasswordPage() {
@@ -36,63 +37,65 @@ export default function ForgotPasswordPage() {
   }
 
   return (
-    <Shell>
-      <Panel>
-        <CardBody>
-          <Hero>
-            <ShieldCheck size={34} />
-            <span>Account Recovery</span>
-            <h1>Forgot password</h1>
-            <p>Enter your account email and we&apos;ll send a link to reset your password.</p>
-          </Hero>
+    <PublicShell>
+      <Shell>
+        <Panel>
+          <CardBody>
+            <Hero>
+              <ShieldCheck size={34} />
+              <span>Account Recovery</span>
+              <h1>Forgot password</h1>
+              <p>Enter your account email and we&apos;ll send a link to reset your password.</p>
+            </Hero>
 
-          {isSubmitted ? (
-            <SuccessPanel role="status">
-              If an account exists for {email.trim().toLowerCase()}, a password reset email is on its way. Check your inbox and spam folder.
-            </SuccessPanel>
-          ) : (
-            <Form onSubmit={submitRequest}>
-              <Field>
-                <span>Email address</span>
-                <Control>
-                  <Mail size={18} />
-                  <input
-                    autoComplete="email"
-                    inputMode="email"
-                    type="email"
-                    value={email}
-                    onChange={(event) => {
-                      setEmail(event.target.value);
-                      setError(undefined);
-                    }}
-                  />
-                </Control>
-              </Field>
+            {isSubmitted ? (
+              <SuccessPanel role="status">
+                If an account exists for {email.trim().toLowerCase()}, a password reset email is on its way. Check your inbox and spam folder.
+              </SuccessPanel>
+            ) : (
+              <Form onSubmit={submitRequest}>
+                <Field>
+                  <span>Email address</span>
+                  <Control>
+                    <Mail size={18} />
+                    <input
+                      autoComplete="email"
+                      inputMode="email"
+                      type="email"
+                      value={email}
+                      onChange={(event) => {
+                        setEmail(event.target.value);
+                        setError(undefined);
+                      }}
+                    />
+                  </Control>
+                </Field>
 
-              {error ? (
-                <ErrorPanel role="alert">
-                  <AlertTriangle size={18} />
-                  <span>{error}</span>
-                </ErrorPanel>
-              ) : null}
+                {error ? (
+                  <ErrorPanel role="alert">
+                    <AlertTriangle size={18} />
+                    <span>{error}</span>
+                  </ErrorPanel>
+                ) : null}
 
-              <Button type="submit" fullWidth disabled={isSubmitting}>
-                {isSubmitting ? "Sending..." : "Send reset link"}
-              </Button>
-            </Form>
-          )}
+                <Button type="submit" fullWidth disabled={isSubmitting}>
+                  {isSubmitting ? "Sending..." : "Send reset link"}
+                </Button>
+              </Form>
+            )}
 
-          <MetaRow>
-            <Link href="/login">Back to login</Link>
-          </MetaRow>
-        </CardBody>
-      </Panel>
-    </Shell>
+            <MetaRow>
+              <Link href="/login">Back to login</Link>
+            </MetaRow>
+          </CardBody>
+        </Panel>
+      </Shell>
+    </PublicShell>
   );
 }
 
-const Shell = styled.main`
-  min-height: 100vh;
+const Shell = styled.section`
+  min-height: calc(100vh - 4.5rem);
   display: grid;
   place-items: center;
   padding: 1rem;

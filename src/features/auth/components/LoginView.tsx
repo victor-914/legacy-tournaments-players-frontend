@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { AlertTriangle, LockKeyhole, Mail, ShieldCheck } from "lucide-react";
 import styled from "styled-components";
 import { Button } from "@/components/ui/Button";
+import { PublicShell } from "@/components/public/PublicShell";
 import { Card, CardBody } from "@/components/ui/Card";
 import { LoginError, authService, readStoredAccessToken } from "@/services/authService";
 import type { LoginInput } from "@/types/domain";
@@ -77,74 +78,76 @@ export function LoginView() {
   }
 
   return (
-    <LoginShell>
-      <LoginCard>
-        <CardBody>
-          <Hero>
-            <ShieldCheck size={34} />
-            <span>Player Access</span>
-            <h1>Login to Legacy Gaming</h1>
-            <p>Use your approved player account to enter the arena.</p>
-          </Hero>
+    <PublicShell>
+      <LoginShell>
+        <LoginCard>
+          <CardBody>
+            <Hero>
+              <ShieldCheck size={34} />
+              <span>Player Access</span>
+              <h1>Login to Legacy Gaming</h1>
+              <p>Use your approved player account to enter the arena.</p>
+            </Hero>
 
-          <Form onSubmit={submitLogin}>
-            <Field>
-              <span>Email address</span>
-              <Control>
-                <Mail size={18} />
-                <input
-                  autoComplete="email"
-                  inputMode="email"
-                  type="email"
-                  value={form.emailAddress}
-                  onChange={(event) => {
-                    setForm((current) => ({ ...current, emailAddress: event.target.value }));
-                    setError(undefined);
-                  }}
-                />
-              </Control>
-            </Field>
+            <Form onSubmit={submitLogin}>
+              <Field>
+                <span>Email address</span>
+                <Control>
+                  <Mail size={18} />
+                  <input
+                    autoComplete="email"
+                    inputMode="email"
+                    type="email"
+                    value={form.emailAddress}
+                    onChange={(event) => {
+                      setForm((current) => ({ ...current, emailAddress: event.target.value }));
+                      setError(undefined);
+                    }}
+                  />
+                </Control>
+              </Field>
 
-            <Field>
-              <span>Password</span>
-              <Control>
-                <LockKeyhole size={18} />
-                <input
-                  autoComplete="current-password"
-                  type="password"
-                  value={form.password}
-                  onChange={(event) => {
-                    setForm((current) => ({ ...current, password: event.target.value }));
-                    setError(undefined);
-                  }}
-                />
-              </Control>
-            </Field>
+              <Field>
+                <span>Password</span>
+                <Control>
+                  <LockKeyhole size={18} />
+                  <input
+                    autoComplete="current-password"
+                    type="password"
+                    value={form.password}
+                    onChange={(event) => {
+                      setForm((current) => ({ ...current, password: event.target.value }));
+                      setError(undefined);
+                    }}
+                  />
+                </Control>
+              </Field>
 
-            <MetaRow>
-              <Link href="/register">Create player account</Link>
-              <Link href="/forgot-password">Forgot password?</Link>
-            </MetaRow>
+              <MetaRow>
+                <Link href="/register">Create player account</Link>
+                <Link href="/forgot-password">Forgot password?</Link>
+              </MetaRow>
 
-            {error ? (
-              <ErrorPanel role="alert">
-                <AlertTriangle size={18} />
-                <span>{error}</span>
-              </ErrorPanel>
-            ) : null}
+              {error ? (
+                <ErrorPanel role="alert">
+                  <AlertTriangle size={18} />
+                  <span>{error}</span>
+                </ErrorPanel>
+              ) : null}
 
-            <Button type="submit" fullWidth disabled={isSubmitting}>
-              {isSubmitting ? "Logging in..." : "Login"}
-            </Button>
-          </Form>
-        </CardBody>
-      </LoginCard>
-    </LoginShell>
+              <Button type="submit" fullWidth disabled={isSubmitting}>
+                {isSubmitting ? "Logging in..." : "Login"}
+              </Button>
+            </Form>
+          </CardBody>
+        </LoginCard>
+      </LoginShell>
+    </PublicShell>
   );
 }
 
-const LoginShell = styled.main`
-  min-height: 100vh;
+const LoginShell = styled.section`
+  min-height: calc(100vh - 4.5rem);
   display: grid;
   place-items: center;
   padding: 1rem;

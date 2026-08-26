@@ -7,6 +7,7 @@ import { CheckCircle2, Trophy, Upload } from "lucide-react";
 import styled from "styled-components";
 import { Button } from "@/components/ui/Button";
 import { Card, CardBody } from "@/components/ui/Card";
+import { PublicShell } from "@/components/public/PublicShell";
 import { createPlayerAccount, submitQualificationEvidence } from "@/services/registrationService";
 import type { RegisterPasswordPayload, RegisterQualificationPayload } from "@/types/domain";
 
@@ -110,146 +111,150 @@ export function RegisterView() {
 
   if (step === "success") {
     return (
-      <RegisterShell>
-        <SuccessCard>
-          <CheckCircle2 size={34} />
-          <h1>Registration successful. Your qualification evidence has been submitted for review.</h1>
-          <p>Redirecting to login...</p>
-        </SuccessCard>
-      </RegisterShell>
+      <PublicShell>
+        <RegisterShell>
+          <SuccessCard>
+            <CheckCircle2 size={34} />
+            <h1>Registration successful. Your qualification evidence has been submitted for review.</h1>
+            <p>Redirecting to login...</p>
+          </SuccessCard>
+        </RegisterShell>
+      </PublicShell>
     );
   }
 
   return (
-    <RegisterShell>
-      <Hero>
-        <Trophy size={32} />
-        <div>
-          <h1>Ready to compete for the Championship?</h1>
-          <p>Submit your player details and stat screenshot to qualify for the current cycle.</p>
-          <LoginLink href="/login">Already approved? Login</LoginLink>
-        </div>
-      </Hero>
+    <PublicShell>
+      <RegisterShell>
+        <Hero>
+          <Trophy size={32} />
+          <div>
+            <h1>Ready to compete for the Championship?</h1>
+            <p>Submit your player details and stat screenshot to qualify for the current cycle.</p>
+            <LoginLink href="/login">Already approved? Login</LoginLink>
+          </div>
+        </Hero>
 
-      <IntroGrid>
-        <Card>
-          <CardBody>
-            <Kicker>Championship Entry</Kicker>
-            <h2>Qualification review</h2>
-            <p>Legacy reviews submitted stats before opening account access for this cycle.</p>
-          </CardBody>
-        </Card>
-        <RequirementCard>
-          <CardBody>
-            <Kicker>Requirement</Kicker>
-            <h2>You need at least 1,000 XP to register for this cycle.</h2>
-            <p>Upload a screenshot showing your game tag and XP.</p>
-          </CardBody>
-        </RequirementCard>
-      </IntroGrid>
-
-      {step === "qualification" ? (
-        <FormGrid onSubmit={submitQualification}>
+        <IntroGrid>
           <Card>
             <CardBody>
-              <SectionHead>
-                <Kicker>Step 1</Kicker>
-                <h2>Player details</h2>
-              </SectionHead>
-              <FieldsGrid>
-                <Field>
-                  <span>Email address</span>
-                  <input type="email" value={qualification.email} onChange={(event) => updateQualification("email", event.target.value)} />
-                </Field>
-                <Field>
-                  <span>Game tag</span>
-                  <input value={qualification.gameTag ?? ""} onChange={(event) => updateQualification("gameTag", event.target.value)} />
-                </Field>
-                <Field>
-                  <span>Phone number</span>
-                  <input value={qualification.phoneNumber} onChange={(event) => updateQualification("phoneNumber", event.target.value)} />
-                </Field>
-                <Field>
-                  <span>Discord username</span>
-                  <input value={qualification.discordUsername} onChange={(event) => updateQualification("discordUsername", event.target.value)} />
-                </Field>
-                <Field>
-                  <span>Current XP</span>
-                  <input
-                    type="number"
-                    min={0}
-                    value={qualification.currentXp || ""}
-                    onChange={(event) => updateQualification("currentXp", Number(event.target.value))}
-                  />
-                  {(qualification.currentXp ?? 0) > 0 && (qualification.currentXp ?? 0) < minimumXp ? (
-                    <InlineError>You need at least 1,000 XP to qualify for this cycle.</InlineError>
-                  ) : null}
-                </Field>
-              </FieldsGrid>
+              <Kicker>Championship Entry</Kicker>
+              <h2>Qualification review</h2>
+              <p>Legacy reviews submitted stats before opening account access for this cycle.</p>
             </CardBody>
           </Card>
+          <RequirementCard>
+            <CardBody>
+              <Kicker>Requirement</Kicker>
+              <h2>You need at least 1,000 XP to register for this cycle.</h2>
+              <p>Upload a screenshot showing your game tag and XP.</p>
+            </CardBody>
+          </RequirementCard>
+        </IntroGrid>
 
-          <EvidenceCard>
+        {step === "qualification" ? (
+          <FormGrid onSubmit={submitQualification}>
+            <Card>
+              <CardBody>
+                <SectionHead>
+                  <Kicker>Step 1</Kicker>
+                  <h2>Player details</h2>
+                </SectionHead>
+                <FieldsGrid>
+                  <Field>
+                    <span>Email address</span>
+                    <input type="email" value={qualification.email} onChange={(event) => updateQualification("email", event.target.value)} />
+                  </Field>
+                  <Field>
+                    <span>Game tag</span>
+                    <input value={qualification.gameTag ?? ""} onChange={(event) => updateQualification("gameTag", event.target.value)} />
+                  </Field>
+                  <Field>
+                    <span>Phone number</span>
+                    <input value={qualification.phoneNumber} onChange={(event) => updateQualification("phoneNumber", event.target.value)} />
+                  </Field>
+                  <Field>
+                    <span>Discord username</span>
+                    <input value={qualification.discordUsername} onChange={(event) => updateQualification("discordUsername", event.target.value)} />
+                  </Field>
+                  <Field>
+                    <span>Current XP</span>
+                    <input
+                      type="number"
+                      min={0}
+                      value={qualification.currentXp || ""}
+                      onChange={(event) => updateQualification("currentXp", Number(event.target.value))}
+                    />
+                    {(qualification.currentXp ?? 0) > 0 && (qualification.currentXp ?? 0) < minimumXp ? (
+                      <InlineError>You need at least 1,000 XP to qualify for this cycle.</InlineError>
+                    ) : null}
+                  </Field>
+                </FieldsGrid>
+              </CardBody>
+            </Card>
+
+            <EvidenceCard>
+              <CardBody>
+                <SectionHead>
+                  <Kicker>Evidence</Kicker>
+                  <h2>Stat screenshot</h2>
+                  <p>Accepted formats: PNG, JPG, JPEG.</p>
+                </SectionHead>
+                <UploadLabel>
+                  <Upload size={24} />
+                  <strong>{qualification.statScreenshot?.name ?? "Upload screenshot proof"}</strong>
+                  <span>Upload a screenshot showing your game tag and XP.</span>
+                  <input type="file" accept="image/png,image/jpeg" onChange={handleScreenshot} />
+                </UploadLabel>
+                {screenshotPreview ? <PreviewImage src={screenshotPreview} alt="Uploaded stat screenshot preview" /> : null}
+                {error ? <ErrorText>{error}</ErrorText> : null}
+                <Button type="submit" disabled={isSubmitting || qualificationErrors.length > 0}>
+                  {isSubmitting ? "Submitting..." : "Continue to Password"}
+                </Button>
+              </CardBody>
+            </EvidenceCard>
+          </FormGrid>
+        ) : (
+          <PasswordCard>
             <CardBody>
               <SectionHead>
-                <Kicker>Evidence</Kicker>
-                <h2>Stat screenshot</h2>
-                <p>Accepted formats: PNG, JPG, JPEG.</p>
+                <Kicker>Step 2</Kicker>
+                <h2>Create password</h2>
+                <p>Use at least 8 characters.</p>
               </SectionHead>
-              <UploadLabel>
-                <Upload size={24} />
-                <strong>{qualification.statScreenshot?.name ?? "Upload screenshot proof"}</strong>
-                <span>Upload a screenshot showing your game tag and XP.</span>
-                <input type="file" accept="image/png,image/jpeg" onChange={handleScreenshot} />
-              </UploadLabel>
-              {screenshotPreview ? <PreviewImage src={screenshotPreview} alt="Uploaded stat screenshot preview" /> : null}
-              {error ? <ErrorText>{error}</ErrorText> : null}
-              <Button type="submit" disabled={isSubmitting || qualificationErrors.length > 0}>
-                {isSubmitting ? "Submitting..." : "Continue to Password"}
-              </Button>
+              <PasswordForm onSubmit={submitPassword}>
+                <Field>
+                  <span>Password</span>
+                  <input
+                    type="password"
+                    value={passwords.password}
+                    onChange={(event) => {
+                      setPasswords((current) => ({ ...current, password: event.target.value }));
+                      setError(undefined);
+                    }}
+                  />
+                </Field>
+                <Field>
+                  <span>Confirm password</span>
+                  <input
+                    type="password"
+                    value={passwords.confirmPassword}
+                    onChange={(event) => {
+                      setPasswords((current) => ({ ...current, confirmPassword: event.target.value }));
+                      setError(undefined);
+                    }}
+                  />
+                </Field>
+                {error ? <ErrorText>{error}</ErrorText> : null}
+                <Button type="submit" disabled={isSubmitting || passwordErrors.length > 0}>
+                  {isSubmitting ? "Creating account..." : "Complete Registration"}
+                </Button>
+              </PasswordForm>
             </CardBody>
-          </EvidenceCard>
-        </FormGrid>
-      ) : (
-        <PasswordCard>
-          <CardBody>
-            <SectionHead>
-              <Kicker>Step 2</Kicker>
-              <h2>Create password</h2>
-              <p>Use at least 8 characters.</p>
-            </SectionHead>
-            <PasswordForm onSubmit={submitPassword}>
-              <Field>
-                <span>Password</span>
-                <input
-                  type="password"
-                  value={passwords.password}
-                  onChange={(event) => {
-                    setPasswords((current) => ({ ...current, password: event.target.value }));
-                    setError(undefined);
-                  }}
-                />
-              </Field>
-              <Field>
-                <span>Confirm password</span>
-                <input
-                  type="password"
-                  value={passwords.confirmPassword}
-                  onChange={(event) => {
-                    setPasswords((current) => ({ ...current, confirmPassword: event.target.value }));
-                    setError(undefined);
-                  }}
-                />
-              </Field>
-              {error ? <ErrorText>{error}</ErrorText> : null}
-              <Button type="submit" disabled={isSubmitting || passwordErrors.length > 0}>
-                {isSubmitting ? "Creating account..." : "Complete Registration"}
-              </Button>
-            </PasswordForm>
-          </CardBody>
-        </PasswordCard>
-      )}
-    </RegisterShell>
+          </PasswordCard>
+        )}
+      </RegisterShell>
+    </PublicShell>
   );
 }
 
@@ -276,7 +281,7 @@ function validatePasswords(payload: RegisterPasswordPayload): string[] {
   return errors;
 }
 
-const RegisterShell = styled.main`
+const RegisterShell = styled.div`
   width: min(100%, 1120px);
   margin: 0 auto;
   padding: 1rem 1rem calc(2.5rem + env(safe-area-inset-bottom));

@@ -5,19 +5,27 @@ import { motion } from "framer-motion";
 import styled from "styled-components";
 import { Badge } from "@/components/ui/Badge";
 import { Card, CardBody } from "@/components/ui/Card";
-import { ProgressBar } from "@/components/ui/ProgressBar";
 import { Button } from "@/components/ui/Button";
 import { TournamentStatus } from "@/types/domain";
-import type { Tournament } from "@/types/domain";
+import type { PublicCycleSummary } from "@/features/public-leaderboard/types";
 
-export function TournamentTeaserCard({ tournament }: { tournament: Tournament }) {
-  const isLive = tournament.status === TournamentStatus.Live;
+interface TournamentTeaserCardProps {
+  cycle: PublicCycleSummary;
+  seasonName?: string;
+  // Player and group counts come from the active cycle's leaderboard, so they
+  // are only known for the cycle the public endpoints are currently serving.
+  playerCount?: number;
+  groupCount?: number;
+}
+
+export function TournamentTeaserCard({ cycle, seasonName, playerCount, groupCount }: TournamentTeaserCardProps) {
+  const isLive = cycle.status === "active";
 
   return (
     <Shell as={motion.article} whileHover={{ y: -6 }} transition={{ duration: 0.2 }}>
       <CardBody>
         <Top>
-          <Badge status={tournament.status} />
+          <Badge status={isLive ? TournamentStatus.Live : TournamentStatus.Completed} />
           {isLive ? (
             <LiveTag>
               <LiveDot />
@@ -25,19 +33,34 @@ export function TournamentTeaserCard({ tournament }: { tournament: Tournament })
             </LiveTag>
           ) : null}
         </Top>
-        <h3>{tournament.name}</h3>
-        <p>{tournament.type}</p>
+        <h3>{cycle.name}</h3>
+        <p>{seasonName ? `${seasonName} · Cycle ${cycle.cycleNumber}` : `Cycle ${cycle.cycleNumber}`}</p>
         <Stats>
-          <span>{tournament.participants} players</span>
-          <span>{tournament.qualificationSlots} slots</span>
-          <span>{tournament.groupStage}</span>
+          {typeof playerCount === "number" ? (
+            <span>
+              {playerCount} player{playerCount === 1 ? "" : "s"}
+            </span>
+          ) : null}
+          {typeof groupCount === "number" ? (
+            <span>
+              {groupCount} group{groupCount === 1 ? "" : "s"}
+            </span>
+          ) : null}
         </Stats>
-        <ProgressBar value={tournament.progress} label={tournament.currentCycle} />
-        <Link href="/register">
-          <Button variant="secondary" fullWidth>
-            Join This Tournament
-          </Button>
-        </Link>
+        <Actions>
+          <Link href="/leaderboard">
+            <Button variant="secondary" fullWidth>
+              View Standings
+            </Button>
+          </Link>
+          {isLive ? (
+            <Link href="/register">
+              <Button variant="ghost" fullWidth>
+                Join This Tournament
+              </Button>
+            </Link>
+          ) : null}
+        </Actions>
       </CardBody>
     </Shell>
   );
@@ -54,11 +77,6 @@ const Shell = styled(Card)`
   p {
     margin: 0;
     color: ${({ theme }) => theme.colors.textMuted};
-  }
-
-  a {
-    display: block;
-    margin-top: 1.1rem;
   }
 `;
 
@@ -99,4 +117,10 @@ const Stats = styled.div`
     color: ${({ theme }) => theme.colors.textMuted};
     font-size: 0.75rem;
   }
+`;
+
+const Actions = styled.div`
+  display: grid;
+  gap: 0.6rem;
+  margin-top: 1.1rem;
 `;

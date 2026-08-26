@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
@@ -10,9 +11,7 @@ import { Button } from "@/components/ui/Button";
 
 const NAV_LINKS = [
   { label: "Home", href: "/" },
-  { label: "Tournaments", href: "/#tournaments" },
-  { label: "About", href: "/about" },
-  { label: "Contact", href: "/contact" }
+  { label: "Tournaments", href: "/#tournaments" }
 ];
 
 export function PublicNav() {
@@ -24,7 +23,7 @@ export function PublicNav() {
       <Inner>
         <Brand href="/" onClick={() => setIsOpen(false)}>
           <LogoMark>
-            <img src="/legacy_logo.jpeg" alt="Legacy Esports" width={40} height={40} />
+            <Image src="/legacy_logo.jpeg" alt="Legacy Esports" width={40} height={40} />
           </LogoMark>
           <span>Legacy Esports</span>
         </Brand>
