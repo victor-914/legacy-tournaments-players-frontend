@@ -127,7 +127,10 @@ const Line = styled(motion.p)<{ $emphasis: boolean }>`
   letter-spacing: 0.01em;
   text-transform: uppercase;
   color: ${({ theme }) => theme.colors.text};
-  font-size: ${({ $emphasis }) => ($emphasis ? "clamp(3rem, 12vw, 8rem)" : "clamp(1.6rem, 5.5vw, 3.4rem)")};
+  /* The lower bounds used to be 3rem/1.6rem, which stopped scaling below ~400px
+     and pushed "Legacy Gaming" past the viewport edge on small phones. */
+  font-size: ${({ $emphasis }) => ($emphasis ? "clamp(2.5rem, 13vw, 8rem)" : "clamp(1.35rem, 6vw, 3.4rem)")};
+  max-width: 100%;
   text-shadow: 0 2px 24px rgba(0, 0, 0, 0.55);
 `;
 

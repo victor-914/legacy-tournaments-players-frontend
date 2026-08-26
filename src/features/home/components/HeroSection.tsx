@@ -138,7 +138,7 @@ export function HeroSection() {
 
 const Wrap = styled.section`
   position: relative;
-  padding: 3.5rem 1.25rem 3rem;
+  padding: 2.75rem 1.25rem 2.5rem;
 
   @media (min-width: ${({ theme }) => theme.breakpoints.md}) {
     padding: 6rem 1.5rem 4.5rem;
@@ -188,6 +188,26 @@ const Actions = styled.div`
   display: flex;
   flex-wrap: wrap;
   gap: 0.85rem;
+
+  /* Side by side these two overflow a phone, and simply wrapping left the
+     second CTA as a stray half-width button. Stack them full width instead. */
+  > a {
+    flex: 1 1 100%;
+  }
+
+  > a > button {
+    width: 100%;
+  }
+
+  @media (min-width: ${({ theme }) => theme.breakpoints.sm}) {
+    > a {
+      flex: 0 1 auto;
+    }
+
+    > a > button {
+      width: auto;
+    }
+  }
 `;
 
 const Stats = styled.div`

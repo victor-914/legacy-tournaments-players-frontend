@@ -6,7 +6,19 @@ import { StyledComponentsRegistry } from "@/providers/StyledComponentsRegistry";
 // Link previews (WhatsApp, X, Slack, iMessage) need absolute URLs, so every
 // relative image/URL below is resolved against this. Set NEXT_PUBLIC_SITE_URL
 // to the deployed origin — a wrong value here means broken preview images.
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://legacygamingafrica.com";
+
+// A single static file rather than a generated og-image route: WhatsApp's
+// crawler gives up on slow responses, and a file out of /public is served
+// immediately. It is 1200x630 (the ratio every scraper crops to) and kept
+// under ~300KB as a JPEG, because WhatsApp silently drops previews above that.
+const ogImage = {
+  url: "/images/banner-og.jpg",
+  width: 1200,
+  height: 630,
+  type: "image/jpeg",
+  alt: "Legacy Esports — compete in live weekly tournaments"
+};
 
 const title = "Legacy Esports | Compete in Live Tournaments";
 const description =
@@ -29,14 +41,16 @@ export const metadata: Metadata = {
     title,
     description,
     url: "/",
-    locale: "en_US"
+    locale: "en_US",
+    images: [ogImage]
   },
   twitter: {
     card: "summary_large_image",
     site: "@legacygaming_ng",
     creator: "@legacygaming_ng",
     title,
-    description
+    description,
+    images: [ogImage]
   },
   icons: {
     icon: "/legacy_logo.jpeg",

@@ -21,7 +21,7 @@ export function PublicShell({ children }: { children: ReactNode }) {
 
 const Wrap = styled.div`
   position: relative;
-  min-height: 100vh;
+  min-height: 100dvh;
   background: ${({ theme }) => theme.colors.background};
   overflow-x: clip;
 `;

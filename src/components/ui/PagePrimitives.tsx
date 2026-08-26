@@ -15,7 +15,14 @@ export const Grid = styled.div<{ $columns?: number }>`
   display: grid;
   gap: 1rem;
 
+  /* Tablets need an intermediate step. Going straight from one column to three
+     or four the moment we hit 768px left each card around 180px wide, which
+     broke headings onto four lines. Cap at two until there is room. */
   @media (min-width: ${({ theme }) => theme.breakpoints.md}) {
+    grid-template-columns: repeat(${({ $columns = 2 }) => Math.min($columns, 2)}, minmax(0, 1fr));
+  }
+
+  @media (min-width: ${({ theme }) => theme.breakpoints.lg}) {
     grid-template-columns: repeat(${({ $columns = 2 }) => $columns}, minmax(0, 1fr));
   }
 `;
@@ -30,11 +37,21 @@ export const SplitGrid = styled.div`
 `;
 
 export const SectionTitle = styled.div`
+  /* The trailing "see all" link is nowrap, so keeping this a row on phones
+     squeezed the heading and its blurb into a narrow column beside it. Stack
+     until there is width for both. */
   display: flex;
-  align-items: end;
-  justify-content: space-between;
-  gap: 1rem;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.5rem;
   margin-bottom: 1rem;
+
+  @media (min-width: ${({ theme }) => theme.breakpoints.sm}) {
+    flex-direction: row;
+    align-items: end;
+    justify-content: space-between;
+    gap: 1rem;
+  }
 
   h2 {
     margin: 0;

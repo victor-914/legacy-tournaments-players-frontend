@@ -41,8 +41,8 @@ const Inner = styled(motion.div)`
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 1.5rem;
-  padding: 2.25rem 2rem;
+  gap: 1.25rem;
+  padding: 1.75rem 1.35rem;
   border-radius: 18px;
   background: linear-gradient(135deg, ${({ theme }) => theme.colors.goldSoft}, ${({ theme }) => theme.colors.surface});
   border: 1px solid ${({ theme }) => theme.colors.borderStrong};
@@ -50,12 +50,40 @@ const Inner = styled(motion.div)`
 
   h2 {
     margin: 0 0 0.4rem;
-    font-size: 1.6rem;
+    font-size: 1.3rem;
   }
 
   p {
     margin: 0;
     max-width: 32rem;
     color: ${({ theme }) => theme.colors.textMuted};
+    font-size: 0.92rem;
+  }
+
+  /* The banner wraps to two rows on phones, where a left-aligned auto-width
+     button reads as an afterthought under the copy. */
+  > a,
+  > a > button {
+    width: 100%;
+  }
+
+  @media (min-width: ${({ theme }) => theme.breakpoints.sm}) {
+    > a,
+    > a > button {
+      width: auto;
+    }
+  }
+
+  @media (min-width: ${({ theme }) => theme.breakpoints.md}) {
+    gap: 1.5rem;
+    padding: 2.25rem 2rem;
+
+    h2 {
+      font-size: 1.6rem;
+    }
+
+    p {
+      font-size: 1rem;
+    }
   }
 `;
