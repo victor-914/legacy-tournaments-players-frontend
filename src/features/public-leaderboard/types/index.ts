@@ -13,6 +13,25 @@ export interface PublicLeaderboardEntry {
   qualifiedCycleId?: string;
   qualifiedCycleName?: string;
   qualifiedGroupName?: string;
+  qualifiedGroupRank?: number;
+  matchesPlayed?: number;
+}
+
+export interface PublicQualifierCycle {
+  cycleId: string;
+  cycleName: string;
+  cycleNumber: number;
+  status: "active" | "completed" | string;
+  qualifierCount: number;
+  entries: PublicLeaderboardEntry[];
+}
+
+export interface PublicQualifiersByCycleData {
+  seasonId?: string;
+  seasonName?: string;
+  total: number;
+  cycles: PublicQualifierCycle[];
+  generatedAt: string;
 }
 
 export interface PublicLeaderboardData {

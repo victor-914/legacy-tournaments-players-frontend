@@ -5,12 +5,17 @@ import type {
   PublicGroupLeaderboardData,
   PublicGroupSummary,
   PublicLeaderboardData,
-  PublicLeaderboardParams
+  PublicLeaderboardParams,
+  PublicQualifiersByCycleData
 } from "@/features/public-leaderboard/types";
 
 export const publicLeaderboardService = {
   async getPublicLeaderboard(params?: PublicLeaderboardParams): Promise<PublicLeaderboardData> {
     const response = await publicApiClient.get<ApiResponse<PublicLeaderboardData>>("/public/leaderboard", { params });
+    return response.data.data;
+  },
+  async getPublicQualifiersByCycle(): Promise<PublicQualifiersByCycleData> {
+    const response = await publicApiClient.get<ApiResponse<PublicQualifiersByCycleData>>("/public/leaderboard/by-cycle");
     return response.data.data;
   },
   async getPublicCycles(): Promise<PublicCycleSummary[]> {

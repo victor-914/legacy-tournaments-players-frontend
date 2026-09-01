@@ -79,6 +79,7 @@ export interface Standing {
   qualifiedCycleId?: string;
   qualifiedCycleName?: string;
   qualifiedGroupName?: string;
+  qualifiedGroupRank?: number;
 }
 
 export interface Tournament {

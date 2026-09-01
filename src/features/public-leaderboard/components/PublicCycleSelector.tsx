@@ -49,9 +49,9 @@ export function PublicCycleSelector({ selectedCycleId, onSelect }: PublicCycleSe
   }
 
   return (
-    <TabList role="tablist" aria-label="Cycles">
+    <CycleTabList role="tablist" aria-label="Cycles">
       {cycles.map((cycle) => (
-        <TabButton
+        <CycleTabButton
           key={cycle.id}
           type="button"
           role="tab"
@@ -61,13 +61,13 @@ export function PublicCycleSelector({ selectedCycleId, onSelect }: PublicCycleSe
           onClick={() => onSelect(cycle)}
         >
           {cycle.name || `Cycle ${cycle.cycleNumber}`}
-        </TabButton>
+        </CycleTabButton>
       ))}
-    </TabList>
+    </CycleTabList>
   );
 }
 
-const TabList = styled.div`
+export const CycleTabList = styled.div`
   display: flex;
   flex-wrap: nowrap;
   gap: 0.5rem;
@@ -88,7 +88,7 @@ const TabList = styled.div`
   }
 `;
 
-const TabButton = styled.button<{ $muted: boolean }>`
+export const CycleTabButton = styled.button<{ $muted: boolean }>`
   flex: none;
   border: 1px solid ${({ theme }) => theme.colors.border};
   border-radius: 999px;

@@ -12,6 +12,8 @@ interface LeaderboardTableProps {
   qualificationSlots?: number;
   faded?: boolean;
   showCycleColumn?: boolean;
+  /** Group the player qualified from (plus their finishing rank there). Use when every row is already scoped to one cycle. */
+  showGroupColumn?: boolean;
 }
 
 export function LeaderboardTable({
@@ -19,12 +21,13 @@ export function LeaderboardTable({
   showQualificationLine = true,
   qualificationSlots,
   faded = false,
-  showCycleColumn = false
+  showCycleColumn = false,
+  showGroupColumn = false
 }: LeaderboardTableProps) {
   const qualificationLabel = qualificationSlots && qualificationSlots > 0
     ? `TOP ${qualificationSlots} QUALIFY`
     : "QUALIFICATION SLOTS NOT SET";
-  const columnCount = showCycleColumn ? 8 : 7;
+  const columnCount = 7 + (showCycleColumn ? 1 : 0) + (showGroupColumn ? 1 : 0);
 
   return (
     <TableWrap $faded={faded}>
@@ -38,6 +41,7 @@ export function LeaderboardTable({
           <th>Pts</th>
           <th>Status</th>
           {showCycleColumn ? <th>Qualified In</th> : null}
+          {showGroupColumn ? <th>Qualified From</th> : null}
         </tr>
       </thead>
       <tbody>
@@ -67,6 +71,13 @@ export function LeaderboardTable({
               <td>
                 {standing.qualifiedCycleName
                   ? `${standing.qualifiedCycleName}${standing.qualifiedGroupName ? ` · ${standing.qualifiedGroupName}` : ""}`
+                  : "—"}
+              </td>
+            ) : null}
+            {showGroupColumn ? (
+              <td>
+                {standing.qualifiedGroupName
+                  ? `${standing.qualifiedGroupName}${standing.qualifiedGroupRank ? ` · #${standing.qualifiedGroupRank}` : ""}`
                   : "—"}
               </td>
             ) : null}

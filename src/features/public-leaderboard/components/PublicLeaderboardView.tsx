@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useMemo, useState } from "react";
 import { Trophy, Wifi, WifiOff } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import styled from "styled-components";
@@ -8,25 +9,49 @@ import { Button } from "@/components/ui/Button";
 import { LeaderboardTable } from "@/components/ui/LeaderboardTable";
 import { PageLoader } from "@/components/ui/PageLoader";
 import { Grid, SectionTitle, TableScroller } from "@/components/ui/PagePrimitives";
+import { CycleTabButton, CycleTabList } from "@/features/public-leaderboard/components/PublicCycleSelector";
 import { publicLeaderboardService } from "@/features/public-leaderboard/services/publicLeaderboardService";
 import { usePublicLeaderboardLive } from "@/features/public-leaderboard/hooks/usePublicLeaderboardLive";
-import type { PublicLeaderboardEntry } from "@/features/public-leaderboard/types";
+import type { PublicLeaderboardEntry, PublicQualifierCycle } from "@/features/public-leaderboard/types";
 import type { Standing } from "@/types/domain";
+
+// Land on the most recent cycle that has actually awarded something; the
+// running cycle is always empty until it is completed.
+function defaultCycleId(cycles: PublicQualifierCycle[]): string | null {
+  const awarded = [...cycles].reverse().find((cycle) => cycle.qualifierCount > 0);
+  return awarded?.cycleId ?? cycles[cycles.length - 1]?.cycleId ?? null;
+}
 
 export function PublicLeaderboardView() {
   const { connected } = usePublicLeaderboardLive();
+  const [selectedCycleId, setSelectedCycleId] = useState<string | null>(null);
   const { data, isLoading, isError, refetch, isFetching } = useQuery({
-    queryKey: ["public-leaderboard"],
-    queryFn: () => publicLeaderboardService.getPublicLeaderboard()
+    // Prefixed with "public-leaderboard" so the live hook's invalidation
+    // still reaches it.
+    queryKey: ["public-leaderboard", "by-cycle"],
+    queryFn: () => publicLeaderboardService.getPublicQualifiersByCycle()
   });
+
+  const cycles = useMemo(() => data?.cycles ?? [], [data]);
+
+  useEffect(() => {
+    if (cycles.length === 0) {
+      return;
+    }
+    if (!selectedCycleId || !cycles.some((cycle) => cycle.cycleId === selectedCycleId)) {
+      setSelectedCycleId(defaultCycleId(cycles));
+    }
+  }, [cycles, selectedCycleId]);
 
   if (isLoading) {
     return <PageLoader label="Loading public leaderboard" />;
   }
 
-  const entries = data?.entries ?? [];
-  const standings = toStandings(entries);
+  const selectedCycle = cycles.find((cycle) => cycle.cycleId === selectedCycleId) ?? null;
+  const standings = toStandings(selectedCycle?.entries ?? []);
   const topThree = standings.slice(0, 3);
+  const totalQualified = data?.total ?? 0;
+  const awardedCycles = cycles.filter((cycle) => cycle.qualifierCount > 0).length;
 
   return (
     <>
@@ -39,11 +64,11 @@ export function PublicLeaderboardView() {
               <span>{connected ? "Live" : "Offline"}</span>
             </LiveBadge>
           </TopRow>
-          <h1>Public Leaderboard</h1>
+          <h1>Grand Finale Qualifiers</h1>
           <p>
             {data?.seasonName ? `${data.seasonName} · ` : ""}
-            {data?.cycleName ? `${data.cycleName} · ` : ""}
-            {entries.length} ranked player{entries.length === 1 ? "" : "s"}
+            {totalQualified} qualified player{totalQualified === 1 ? "" : "s"}
+            {awardedCycles > 0 ? ` across ${awardedCycles} cycle${awardedCycles === 1 ? "" : "s"}` : ""}
             {data?.generatedAt ? ` · updated ${formatGeneratedAt(data.generatedAt)}` : ""}
           </p>
         </CardBody>
@@ -61,6 +86,25 @@ export function PublicLeaderboardView() {
         </Card>
       ) : null}
 
+      {cycles.length > 0 ? (
+        <CycleTabList role="tablist" aria-label="Qualifiers by cycle">
+          {cycles.map((cycle) => (
+            <CycleTabButton
+              key={cycle.cycleId}
+              type="button"
+              role="tab"
+              aria-selected={cycle.cycleId === selectedCycleId}
+              data-active={cycle.cycleId === selectedCycleId}
+              $muted={cycle.qualifierCount === 0}
+              onClick={() => setSelectedCycleId(cycle.cycleId)}
+            >
+              {cycle.cycleName || `Cycle ${cycle.cycleNumber}`}
+              <TabCount>{cycle.qualifierCount}</TabCount>
+            </CycleTabButton>
+          ))}
+        </CycleTabList>
+      ) : null}
+
       {topThree.length > 0 ? (
         <Grid $columns={3}>
           {topThree.map((standing) => (
@@ -68,7 +112,10 @@ export function PublicLeaderboardView() {
               <CardBody>
                 <RankBadge>#{standing.rank}</RankBadge>
                 <PlayerName>{standing.player.gamerTag}</PlayerName>
-                <PlayerStat>{standing.points} pts</PlayerStat>
+                <PlayerStat>
+                  {standing.points} pts
+                  {standing.qualifiedGroupName ? ` · ${standing.qualifiedGroupName}` : ""}
+                </PlayerStat>
               </CardBody>
             </TopCard>
           ))}
@@ -79,20 +126,25 @@ export function PublicLeaderboardView() {
         <CardBody>
           <SectionTitle>
             <div>
-              <h2>{data?.cycleName ? `${data.cycleName} Qualifiers` : "Leaderboard"}</h2>
-              <p>Ranked by points, wins, and score difference.</p>
+              <h2>{selectedCycle ? `${selectedCycle.cycleName} Qualifiers` : "Qualifiers"}</h2>
+              <p>
+                {selectedCycle && selectedCycle.status !== "completed"
+                  ? "This cycle is still being played. Qualifiers are announced when it ends."
+                  : "Ranked by the group-stage points each player qualified on."}
+              </p>
             </div>
           </SectionTitle>
           {standings.length === 0 && !isError ? (
             <EmptyState>
-              Rankings are published when a cycle ends. Check back once the current cycle is
-              complete.
+              {selectedCycle && selectedCycle.status === "completed"
+                ? "No qualifiers were awarded from this cycle."
+                : "Rankings are published when a cycle ends. Check back once the current cycle is complete."}
             </EmptyState>
           ) : (
             <TableScroller>
-              {/* Every row is from the same cycle now, so the per-row cycle
-                  column would just repeat the heading above. */}
-              <LeaderboardTable standings={standings} showQualificationLine={false} />
+              {/* Every row is from the selected cycle, so show the group each
+                  player came through rather than repeating the cycle name. */}
+              <LeaderboardTable standings={standings} showQualificationLine={false} showGroupColumn />
             </TableScroller>
           )}
         </CardBody>
@@ -117,13 +169,15 @@ function toStandings(entries: PublicLeaderboardEntry[]): Standing[] {
     },
     wins: entry.wins,
     losses: entry.losses,
+    matchesPlayed: entry.matchesPlayed,
     xp: entry.xp,
     points: entry.points,
     qualificationStatus: entry.qualificationStatus,
     movement: "same",
     qualifiedCycleId: entry.qualifiedCycleId,
     qualifiedCycleName: entry.qualifiedCycleName,
-    qualifiedGroupName: entry.qualifiedGroupName
+    qualifiedGroupName: entry.qualifiedGroupName,
+    qualifiedGroupRank: entry.qualifiedGroupRank
   }));
 }
 
@@ -190,6 +244,15 @@ const LiveBadge = styled.div<{ $connected: boolean }>`
     color: inherit;
     filter: none;
   }
+`;
+
+const TabCount = styled.span`
+  margin-left: 0.45rem;
+  padding: 0.1rem 0.45rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  font-size: 0.7rem;
+  font-weight: 900;
 `;
 
 const Notice = styled(CardBody)`
