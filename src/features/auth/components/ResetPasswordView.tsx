@@ -3,11 +3,22 @@
 import { FormEvent, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { AlertTriangle, LockKeyhole, ShieldCheck } from "lucide-react";
+import { AlertTriangle, ShieldCheck } from "lucide-react";
 import styled from "styled-components";
 import { Button } from "@/components/ui/Button";
-import { Card, CardBody } from "@/components/ui/Card";
+import { CardBody } from "@/components/ui/Card";
 import { PublicShell } from "@/components/public/PublicShell";
+import {
+  AuthCard,
+  AuthShell,
+  ErrorPanel,
+  Field,
+  Form,
+  Hero,
+  MetaRow,
+  PasswordInput,
+  SuccessPanel
+} from "@/features/auth/components/AuthFormPrimitives";
 import { PasswordResetError, authService } from "@/services/authService";
 
 function getResetErrorMessage(error: unknown) {
@@ -68,8 +79,8 @@ export function ResetPasswordView() {
 
   return (
     <PublicShell>
-      <ResetShell>
-        <ResetCard>
+      <AuthShell>
+        <AuthCard>
           <CardBody>
             <Hero>
               <ShieldCheck size={34} />
@@ -80,7 +91,7 @@ export function ResetPasswordView() {
 
             {isSubmitted ? (
               <>
-                <SuccessPanel role="status">Your password has been reset. You can now log in with your new password.</SuccessPanel>
+                <ResetSuccessPanel role="status">Your password has been reset. You can now log in with your new password.</ResetSuccessPanel>
                 <Button type="button" fullWidth onClick={() => router.replace("/login")}>
                   Go to login
                 </Button>
@@ -89,34 +100,26 @@ export function ResetPasswordView() {
               <Form onSubmit={submitReset}>
                 <Field>
                   <span>New password</span>
-                  <Control>
-                    <LockKeyhole size={18} />
-                    <input
-                      autoComplete="new-password"
-                      type="password"
-                      value={password}
-                      onChange={(event) => {
-                        setPassword(event.target.value);
-                        setError(undefined);
-                      }}
-                    />
-                  </Control>
+                  <PasswordInput
+                    autoComplete="new-password"
+                    value={password}
+                    onChange={(event) => {
+                      setPassword(event.target.value);
+                      setError(undefined);
+                    }}
+                  />
                 </Field>
 
                 <Field>
                   <span>Confirm new password</span>
-                  <Control>
-                    <LockKeyhole size={18} />
-                    <input
-                      autoComplete="new-password"
-                      type="password"
-                      value={confirmPassword}
-                      onChange={(event) => {
-                        setConfirmPassword(event.target.value);
-                        setError(undefined);
-                      }}
-                    />
-                  </Control>
+                  <PasswordInput
+                    autoComplete="new-password"
+                    value={confirmPassword}
+                    onChange={(event) => {
+                      setConfirmPassword(event.target.value);
+                      setError(undefined);
+                    }}
+                  />
                 </Field>
 
                 {!token ? (
@@ -137,142 +140,21 @@ export function ResetPasswordView() {
               </Form>
             )}
 
-            <MetaRow>
+            <FooterRow>
               <Link href="/forgot-password">Request a new link</Link>
               <Link href="/login">Back to login</Link>
-            </MetaRow>
+            </FooterRow>
           </CardBody>
-        </ResetCard>
-      </ResetShell>
+        </AuthCard>
+      </AuthShell>
     </PublicShell>
   );
 }
 
-const ResetShell = styled.section`
-  min-height: calc(100vh - 4.5rem);
-  display: grid;
-  place-items: center;
-  padding: 1rem;
-`;
-
-const ResetCard = styled(Card)`
-  width: min(100%, 30rem);
-  border-color: ${({ theme }) => theme.colors.borderStrong};
-`;
-
-const Hero = styled.div`
-  display: grid;
-  justify-items: center;
-  gap: 0.45rem;
-  margin-bottom: 1.4rem;
-  text-align: center;
-
-  svg,
-  span {
-    color: ${({ theme }) => theme.colors.gold};
-  }
-
-  span {
-    font-size: 0.74rem;
-    font-weight: 900;
-    text-transform: uppercase;
-  }
-
-  h1 {
-    margin: 0;
-    font-size: clamp(2rem, 8vw, 3.3rem);
-    line-height: 0.98;
-  }
-
-  p {
-    margin: 0;
-    color: ${({ theme }) => theme.colors.textMuted};
-  }
-`;
-
-const Form = styled.form`
-  display: grid;
-  gap: 1rem;
-`;
-
-const Field = styled.label`
-  display: grid;
-  gap: 0.42rem;
-  color: ${({ theme }) => theme.colors.textMuted};
-  font-weight: 800;
-`;
-
-const Control = styled.div`
-  min-height: 3rem;
-  display: flex;
-  align-items: center;
-  gap: 0.7rem;
-  border: 1px solid ${({ theme }) => theme.colors.border};
-  border-radius: 8px;
-  background: ${({ theme }) => theme.colors.surfaceGlass};
-  padding: 0 0.9rem;
-
-  svg {
-    flex: 0 0 auto;
-    color: ${({ theme }) => theme.colors.gold};
-  }
-
-  input {
-    min-width: 0;
-    width: 100%;
-    border: 0;
-    outline: 0;
-    background: transparent;
-    color: ${({ theme }) => theme.colors.text};
-  }
-
-  &:focus-within {
-    outline: 2px solid ${({ theme }) => theme.colors.borderStrong};
-    outline-offset: 1px;
-  }
-`;
-
-const MetaRow = styled.div`
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  gap: 0.8rem;
+const FooterRow = styled(MetaRow)`
   margin-top: 1.2rem;
-  color: ${({ theme }) => theme.colors.textMuted};
-  font-size: 0.88rem;
-  font-weight: 800;
-
-  a {
-    color: ${({ theme }) => theme.colors.gold};
-  }
 `;
 
-const ErrorPanel = styled.div`
-  display: flex;
-  align-items: flex-start;
-  gap: 0.65rem;
-  border: 1px solid rgba(255, 59, 48, 0.36);
-  border-radius: 8px;
-  background: rgba(255, 59, 48, 0.1);
-  padding: 0.8rem 0.9rem;
-  color: ${({ theme }) => theme.colors.error};
-  font-size: 0.9rem;
-  font-weight: 800;
-  line-height: 1.35;
-
-  svg {
-    flex: 0 0 auto;
-    margin-top: 0.05rem;
-  }
-`;
-
-const SuccessPanel = styled.div`
-  border: 1px solid ${({ theme }) => theme.colors.borderStrong};
-  border-radius: 8px;
-  background: ${({ theme }) => theme.colors.surfaceGlass};
-  padding: 0.9rem;
+const ResetSuccessPanel = styled(SuccessPanel)`
   margin-bottom: 1rem;
-  color: ${({ theme }) => theme.colors.text};
-  font-size: 0.92rem;
-  line-height: 1.45;
 `;

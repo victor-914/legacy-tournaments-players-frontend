@@ -3,11 +3,21 @@
 import { FormEvent, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { AlertTriangle, LockKeyhole, Mail, ShieldCheck } from "lucide-react";
-import styled from "styled-components";
+import { AlertTriangle, Mail, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { PublicShell } from "@/components/public/PublicShell";
-import { Card, CardBody } from "@/components/ui/Card";
+import { CardBody } from "@/components/ui/Card";
+import {
+  AuthCard,
+  AuthShell,
+  Control,
+  ErrorPanel,
+  Field,
+  Form,
+  Hero,
+  MetaRow,
+  PasswordInput
+} from "@/features/auth/components/AuthFormPrimitives";
 import { LoginError, authService, readStoredAccessToken } from "@/services/authService";
 import type { LoginInput } from "@/types/domain";
 
@@ -79,8 +89,8 @@ export function LoginView() {
 
   return (
     <PublicShell>
-      <LoginShell>
-        <LoginCard>
+      <AuthShell>
+        <AuthCard>
           <CardBody>
             <Hero>
               <ShieldCheck size={34} />
@@ -109,18 +119,14 @@ export function LoginView() {
 
               <Field>
                 <span>Password</span>
-                <Control>
-                  <LockKeyhole size={18} />
-                  <input
-                    autoComplete="current-password"
-                    type="password"
-                    value={form.password}
-                    onChange={(event) => {
-                      setForm((current) => ({ ...current, password: event.target.value }));
-                      setError(undefined);
-                    }}
-                  />
-                </Control>
+                <PasswordInput
+                  autoComplete="current-password"
+                  value={form.password}
+                  onChange={(event) => {
+                    setForm((current) => ({ ...current, password: event.target.value }));
+                    setError(undefined);
+                  }}
+                />
               </Field>
 
               <MetaRow>
@@ -140,125 +146,8 @@ export function LoginView() {
               </Button>
             </Form>
           </CardBody>
-        </LoginCard>
-      </LoginShell>
+        </AuthCard>
+      </AuthShell>
     </PublicShell>
   );
 }
-
-const LoginShell = styled.section`
-  min-height: calc(100vh - 4.5rem);
-  display: grid;
-  place-items: center;
-  padding: 1rem;
-`;
-
-const LoginCard = styled(Card)`
-  width: min(100%, 30rem);
-  border-color: ${({ theme }) => theme.colors.borderStrong};
-`;
-
-const Hero = styled.div`
-  display: grid;
-  justify-items: center;
-  gap: 0.45rem;
-  margin-bottom: 1.4rem;
-  text-align: center;
-
-  svg,
-  span {
-    color: ${({ theme }) => theme.colors.gold};
-  }
-
-  span {
-    font-size: 0.74rem;
-    font-weight: 900;
-    text-transform: uppercase;
-  }
-
-  h1 {
-    margin: 0;
-    font-size: clamp(2rem, 8vw, 3.3rem);
-    line-height: 0.98;
-  }
-
-  p {
-    margin: 0;
-    color: ${({ theme }) => theme.colors.textMuted};
-  }
-`;
-
-const Form = styled.form`
-  display: grid;
-  gap: 1rem;
-`;
-
-const Field = styled.label`
-  display: grid;
-  gap: 0.42rem;
-  color: ${({ theme }) => theme.colors.textMuted};
-  font-weight: 800;
-`;
-
-const Control = styled.div`
-  min-height: 3rem;
-  display: flex;
-  align-items: center;
-  gap: 0.7rem;
-  border: 1px solid ${({ theme }) => theme.colors.border};
-  border-radius: 8px;
-  background: ${({ theme }) => theme.colors.surfaceGlass};
-  padding: 0 0.9rem;
-
-  svg {
-    flex: 0 0 auto;
-    color: ${({ theme }) => theme.colors.gold};
-  }
-
-  input {
-    min-width: 0;
-    width: 100%;
-    border: 0;
-    outline: 0;
-    background: transparent;
-    color: ${({ theme }) => theme.colors.text};
-  }
-
-  &:focus-within {
-    outline: 2px solid ${({ theme }) => theme.colors.borderStrong};
-    outline-offset: 1px;
-  }
-`;
-
-const MetaRow = styled.div`
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  gap: 0.8rem;
-  color: ${({ theme }) => theme.colors.textMuted};
-  font-size: 0.88rem;
-  font-weight: 800;
-
-  a {
-    color: ${({ theme }) => theme.colors.gold};
-  }
-`;
-
-const ErrorPanel = styled.div`
-  display: flex;
-  align-items: flex-start;
-  gap: 0.65rem;
-  border: 1px solid rgba(255, 59, 48, 0.36);
-  border-radius: 8px;
-  background: rgba(255, 59, 48, 0.1);
-  padding: 0.8rem 0.9rem;
-  color: ${({ theme }) => theme.colors.error};
-  font-size: 0.9rem;
-  font-weight: 800;
-  line-height: 1.35;
-
-  svg {
-    flex: 0 0 auto;
-    margin-top: 0.05rem;
-  }
-`;
