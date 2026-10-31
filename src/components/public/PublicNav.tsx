@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/Button";
 const NAV_LINKS = [
   { label: "Home", href: "/" },
   { label: "Tournaments", href: "/#tournaments" },
+  { label: "Leaderboard", href: "/leaderboard" },
   { label: "Championship", href: "/championship" }
 ];
 

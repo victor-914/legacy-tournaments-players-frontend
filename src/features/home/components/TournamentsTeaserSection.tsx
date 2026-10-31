@@ -4,7 +4,7 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
 import styled from "styled-components";
-import { Button } from "@/components/ui/Button";
+import { Button, LinkButton } from "@/components/ui/Button";
 import { Card, CardBody } from "@/components/ui/Card";
 import { PageLoader } from "@/components/ui/PageLoader";
 import { Grid, SectionTitle } from "@/components/ui/PagePrimitives";
@@ -84,9 +84,9 @@ export function TournamentsTeaserSection() {
             <Notice>
               <strong>No tournaments are running right now</strong>
               <p>Register now and you will be in the pool when the next cycle opens.</p>
-              <Link href="/register">
-                <Button variant="secondary">Create player account</Button>
-              </Link>
+              <LinkButton href="/register" variant="secondary">
+                Create player account
+              </LinkButton>
             </Notice>
           </Card>
         ) : null}
@@ -159,7 +159,7 @@ const Inner = styled.div`
   display: grid;
   gap: 1.25rem;
 
-  a {
+  ${SectionTitle} a {
     font-size: 0.85rem;
     font-weight: 800;
     color: ${({ theme }) => theme.colors.gold};

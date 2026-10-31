@@ -4,11 +4,13 @@ import type { ReactNode } from "react";
 import styled from "styled-components";
 import { PublicFooter } from "@/components/public/PublicFooter";
 import { PublicNav } from "@/components/public/PublicNav";
+import { BackgroundPaths } from "@/components/ui/BackgroundPaths";
 
 export function PublicShell({ children }: { children: ReactNode }) {
   return (
     <Wrap>
       <Ambient aria-hidden="true">
+        <BackgroundPaths />
         <Orb $variant="gold" />
         <Orb $variant="blue" />
       </Ambient>
@@ -21,6 +23,9 @@ export function PublicShell({ children }: { children: ReactNode }) {
 
 const Wrap = styled.div`
   position: relative;
+  /* Lets the ambient layer sit at z-index -1: above this background, but
+     behind the nav, main content and footer. */
+  isolation: isolate;
   min-height: 100dvh;
   background: ${({ theme }) => theme.colors.background};
   overflow-x: clip;
@@ -29,7 +34,7 @@ const Wrap = styled.div`
 const Ambient = styled.div`
   position: absolute;
   inset: 0;
-  z-index: 0;
+  z-index: -1;
   overflow: hidden;
   pointer-events: none;
 `;
