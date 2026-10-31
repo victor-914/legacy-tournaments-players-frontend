@@ -3,7 +3,7 @@
 import { useState } from "react";
 import styled from "styled-components";
 import { PublicShell } from "@/components/public/PublicShell";
-import { PageStack, SectionTitle } from "@/components/ui/PagePrimitives";
+import { PageStack } from "@/components/ui/PagePrimitives";
 import { PublicCycleSelector } from "@/features/public-leaderboard/components/PublicCycleSelector";
 import { PublicGroupLeaderboardView } from "@/features/public-leaderboard/components/PublicGroupLeaderboardView";
 import { PublicGroupSelector } from "@/features/public-leaderboard/components/PublicGroupSelector";
@@ -32,12 +32,11 @@ export function PublicLeaderboardScreen() {
           <PublicLeaderboardView />
 
           <GroupSection>
-            <SectionTitle>
-              <div>
-                <h2>Group Leaderboards</h2>
-                <p>Select a cycle and group to see its standings.</p>
-              </div>
-            </SectionTitle>
+            <GroupHeading>
+              <span>Group stage</span>
+              <h2>Group Leaderboards</h2>
+              <p>Pick a cycle, then a group, to see its full standings.</p>
+            </GroupHeading>
             <PublicCycleSelector selectedCycleId={selectedCycle?.id ?? null} onSelect={handleSelectCycle} />
             <PublicGroupSelector
               // Omit cycleId for the active cycle (including before cycles have
@@ -71,7 +70,37 @@ const Content = styled.div`
   }
 `;
 
-const GroupSection = styled.div`
+const GroupSection = styled.section`
   display: grid;
   gap: 1rem;
+  margin-top: 1.5rem;
+  padding-top: 2rem;
+  border-top: 1px solid ${({ theme }) => theme.colors.border};
+`;
+
+const GroupHeading = styled.div`
+  display: grid;
+  gap: 0.4rem;
+
+  span {
+    color: ${({ theme }) => theme.colors.gold};
+    font-size: 0.75rem;
+    font-weight: 800;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+
+  h2 {
+    margin: 0;
+    font-family: ${({ theme }) => theme.typography.displayFontFamily};
+    font-weight: 400;
+    font-size: clamp(1.8rem, 5vw, 2.6rem);
+    line-height: 1;
+    text-transform: uppercase;
+  }
+
+  p {
+    margin: 0;
+    color: ${({ theme }) => theme.colors.textMuted};
+  }
 `;

@@ -3,6 +3,8 @@ import type { QualificationStatus } from "@/types/domain";
 export interface PublicLeaderboardEntry {
   rank: number;
   playerId: string;
+  // The by-cycle endpoint sends the player id as `id` rather than `playerId`.
+  id?: string;
   gamerTag: string;
   avatarUrl?: string;
   wins: number;

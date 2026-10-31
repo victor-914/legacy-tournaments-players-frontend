@@ -1,15 +1,17 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Trophy, Wifi, WifiOff } from "lucide-react";
+import { Trophy, WifiOff } from "lucide-react";
+import { ShaderBackdrop } from "@/components/ui/ShaderBackdrop";
 import { useQuery } from "@tanstack/react-query";
 import styled from "styled-components";
 import { Card, CardBody } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { LeaderboardTable } from "@/components/ui/LeaderboardTable";
 import { PageLoader } from "@/components/ui/PageLoader";
-import { Grid, SectionTitle, TableScroller } from "@/components/ui/PagePrimitives";
+import { SectionTitle, TableScroller } from "@/components/ui/PagePrimitives";
 import { CycleTabButton, CycleTabList } from "@/features/public-leaderboard/components/PublicCycleSelector";
+import { QualifierPodium } from "@/features/public-leaderboard/components/QualifierPodium";
 import { publicLeaderboardService } from "@/features/public-leaderboard/services/publicLeaderboardService";
 import { usePublicLeaderboardLive } from "@/features/public-leaderboard/hooks/usePublicLeaderboardLive";
 import type { PublicLeaderboardEntry, PublicQualifierCycle } from "@/features/public-leaderboard/types";
@@ -49,29 +51,43 @@ export function PublicLeaderboardView() {
 
   const selectedCycle = cycles.find((cycle) => cycle.cycleId === selectedCycleId) ?? null;
   const standings = toStandings(selectedCycle?.entries ?? []);
-  const topThree = standings.slice(0, 3);
   const totalQualified = data?.total ?? 0;
   const awardedCycles = cycles.filter((cycle) => cycle.qualifierCount > 0).length;
 
   return (
     <>
       <Hero>
-        <CardBody>
+        <ShaderBackdrop intensity={0.4} renderScale={0.5} />
+        <HeroScrim aria-hidden="true" />
+        <HeroBody>
           <TopRow>
-            <Trophy size={54} />
-            <LiveBadge $connected={connected} aria-label={connected ? "Live updates connected" : "Live updates offline"}>
-              {connected ? <Wifi size={14} /> : <WifiOff size={14} />}
-              <span>{connected ? "Live" : "Offline"}</span>
+            <HeroTitle>
+              <Eyebrow>
+                <Trophy size={16} aria-hidden="true" />
+                {data?.seasonName ?? "Season standings"}
+              </Eyebrow>
+              <h1>Grand Finale Qualifiers</h1>
+            </HeroTitle>
+            <LiveBadge $connected={connected} role="status">
+              {connected ? <LivePulse aria-hidden="true" /> : <WifiOff size={14} aria-hidden="true" />}
+              <span>{connected ? "Live updates" : "Offline"}</span>
             </LiveBadge>
           </TopRow>
-          <h1>Grand Finale Qualifiers</h1>
-          <p>
-            {data?.seasonName ? `${data.seasonName} · ` : ""}
-            {totalQualified} qualified player{totalQualified === 1 ? "" : "s"}
-            {awardedCycles > 0 ? ` across ${awardedCycles} cycle${awardedCycles === 1 ? "" : "s"}` : ""}
-            {data?.generatedAt ? ` · updated ${formatGeneratedAt(data.generatedAt)}` : ""}
-          </p>
-        </CardBody>
+          <HeroStats>
+            <HeroStat>
+              <strong>{totalQualified}</strong>
+              <span>Qualified players</span>
+            </HeroStat>
+            <HeroStat>
+              <strong>{awardedCycles}</strong>
+              <span>Cycles awarded</span>
+            </HeroStat>
+            <HeroStat>
+              <strong>{data?.generatedAt ? formatGeneratedAt(data.generatedAt) : "—"}</strong>
+              <span>Last updated</span>
+            </HeroStat>
+          </HeroStats>
+        </HeroBody>
       </Hero>
 
       {isError ? (
@@ -105,22 +121,7 @@ export function PublicLeaderboardView() {
         </CycleTabList>
       ) : null}
 
-      {topThree.length > 0 ? (
-        <Grid $columns={3}>
-          {topThree.map((standing) => (
-            <TopCard key={standing.player.id}>
-              <CardBody>
-                <RankBadge>#{standing.rank}</RankBadge>
-                <PlayerName>{standing.player.gamerTag}</PlayerName>
-                <PlayerStat>
-                  {standing.points} pts
-                  {standing.qualifiedGroupName ? ` · ${standing.qualifiedGroupName}` : ""}
-                </PlayerStat>
-              </CardBody>
-            </TopCard>
-          ))}
-        </Grid>
-      ) : null}
+      <QualifierPodium standings={standings} />
 
       <Card>
         <CardBody>
@@ -157,7 +158,9 @@ function toStandings(entries: PublicLeaderboardEntry[]): Standing[] {
   return entries.map((entry) => ({
     rank: entry.rank,
     player: {
-      id: entry.playerId,
+      // Fall back through both id spellings, then rank+tag, so React keys are
+      // never undefined (they were, which collapsed rows on re-render).
+      id: entry.playerId ?? entry.id ?? `${entry.rank}-${entry.gamerTag}`,
       gamerTag: entry.gamerTag,
       avatarUrl: entry.avatarUrl ?? "",
       rank: "",
@@ -189,28 +192,33 @@ function formatGeneratedAt(value: string): string {
   }
 }
 
-const Hero = styled(Card)`
-  min-height: 12rem;
+const Hero = styled.section`
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  border: 1px solid ${({ theme }) => theme.colors.borderStrong};
+  border-radius: 16px;
+  background: ${({ theme }) => theme.colors.background};
+  box-shadow: ${({ theme }) => theme.shadows.panel};
+`;
+
+const HeroScrim = styled.div`
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  /* Keeps the copy in the lower-left legible over the shader. */
+  background: linear-gradient(100deg, rgba(11, 11, 11, 0.9) 0%, rgba(11, 11, 11, 0.6) 50%, rgba(11, 11, 11, 0.2) 100%);
+`;
+
+const HeroBody = styled.div`
+  position: relative;
   display: grid;
-  align-items: end;
+  gap: 1.75rem;
+  padding: 1.5rem 1.25rem;
 
-  svg {
-    color: ${({ theme }) => theme.colors.gold};
-    filter: drop-shadow(0 0 22px rgba(212, 175, 55, 0.55));
-  }
-
-  h1 {
-    margin: 0.8rem 0 0.4rem;
-    font-size: clamp(2.1rem, 7vw, 4rem);
-    line-height: 0.95;
-  }
-
-  p {
-    color: ${({ theme }) => theme.colors.textMuted};
-  }
-
-  @media (min-width: ${({ theme }) => theme.breakpoints.sm}) {
-    min-height: 16rem;
+  @media (min-width: ${({ theme }) => theme.breakpoints.md}) {
+    gap: 2.5rem;
+    padding: 2.5rem 2.25rem 2.25rem;
   }
 `;
 
@@ -219,30 +227,102 @@ const TopRow = styled.div`
   flex-wrap: wrap;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 0.75rem;
+  gap: 1rem;
+`;
 
-  @media (min-width: ${({ theme }) => theme.breakpoints.sm}) {
-    flex-wrap: nowrap;
-    gap: 1rem;
+const HeroTitle = styled.div`
+  display: grid;
+  gap: 0.6rem;
+
+  h1 {
+    margin: 0;
+    font-family: ${({ theme }) => theme.typography.displayFontFamily};
+    font-weight: 400;
+    font-size: clamp(2.4rem, 8vw, 4.75rem);
+    line-height: 0.95;
+    text-transform: uppercase;
+    text-wrap: balance;
+  }
+`;
+
+const Eyebrow = styled.span`
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  color: ${({ theme }) => theme.colors.gold};
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+`;
+
+const HeroStats = styled.div`
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.6rem;
+  margin: 0;
+  max-width: 40rem;
+`;
+
+const HeroStat = styled.div`
+  display: grid;
+  gap: 0.2rem;
+  padding: 0.85rem 0.9rem;
+  border-radius: 12px;
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  background: rgba(22, 22, 22, 0.7);
+  backdrop-filter: blur(10px);
+
+  strong {
+    font-family: ${({ theme }) => theme.typography.displayFontFamily};
+    font-weight: 400;
+    font-size: clamp(1.35rem, 4vw, 1.9rem);
+    line-height: 1.1;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+
+  span {
+    color: ${({ theme }) => theme.colors.textMuted};
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
   }
 `;
 
 const LiveBadge = styled.div<{ $connected: boolean }>`
   display: flex;
   align-items: center;
-  gap: 0.35rem;
-  height: 2rem;
-  padding: 0 0.7rem;
-  border: 1px solid ${({ theme }) => theme.colors.border};
+  gap: 0.4rem;
+  min-height: 2rem;
+  padding: 0 0.8rem;
+  border: 1px solid ${({ $connected, theme }) => ($connected ? "rgba(0, 200, 83, 0.4)" : theme.colors.border)};
   border-radius: 999px;
-  background: ${({ theme }) => theme.colors.surfaceGlass};
+  background: ${({ $connected }) => ($connected ? "rgba(0, 200, 83, 0.1)" : "rgba(255, 255, 255, 0.06)")};
   color: ${({ $connected, theme }) => ($connected ? theme.colors.success : theme.colors.textDim)};
   font-size: 0.76rem;
   font-weight: 900;
+`;
 
-  svg {
-    color: inherit;
-    filter: none;
+const LivePulse = styled.i`
+  width: 0.45rem;
+  height: 0.45rem;
+  border-radius: 50%;
+  background: currentColor;
+  animation: lbPulse 1.8s ease-out infinite;
+
+  @keyframes lbPulse {
+    0% {
+      box-shadow: 0 0 0 0 rgba(0, 200, 83, 0.55);
+    }
+    100% {
+      box-shadow: 0 0 0 0.5rem rgba(0, 200, 83, 0);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
   }
 `;
 
@@ -265,25 +345,9 @@ const Notice = styled(CardBody)`
   }
 `;
 
-const TopCard = styled(Card)``;
 
-const RankBadge = styled.div`
-  color: ${({ theme }) => theme.colors.gold};
-  font-weight: 900;
-  font-size: 1.4rem;
-`;
 
-const PlayerName = styled.div`
-  margin-top: 0.35rem;
-  color: ${({ theme }) => theme.colors.text};
-  font-weight: 800;
-  font-size: 1.1rem;
-`;
 
-const PlayerStat = styled.div`
-  margin-top: 0.2rem;
-  color: ${({ theme }) => theme.colors.textMuted};
-`;
 
 const EmptyState = styled.div`
   min-height: 9rem;

@@ -1,11 +1,10 @@
 "use client";
 
-import Link from "next/link";
 import { motion } from "framer-motion";
 import styled from "styled-components";
 import { Badge } from "@/components/ui/Badge";
 import { Card, CardBody } from "@/components/ui/Card";
-import { Button } from "@/components/ui/Button";
+import { LinkButton } from "@/components/ui/Button";
 import { TournamentStatus } from "@/types/domain";
 import type { PublicCycleSummary } from "@/features/public-leaderboard/types";
 
@@ -48,17 +47,13 @@ export function TournamentTeaserCard({ cycle, seasonName, playerCount, groupCoun
           ) : null}
         </Stats>
         <Actions>
-          <Link href="/leaderboard">
-            <Button variant="secondary" fullWidth>
-              View Standings
-            </Button>
-          </Link>
+          <LinkButton href="/leaderboard" variant="secondary" fullWidth>
+            View Standings
+          </LinkButton>
           {isLive ? (
-            <Link href="/register">
-              <Button variant="ghost" fullWidth>
-                Join This Tournament
-              </Button>
-            </Link>
+            <LinkButton href="/register" variant="ghost" fullWidth>
+              Join This Tournament
+            </LinkButton>
           ) : null}
         </Actions>
       </CardBody>
