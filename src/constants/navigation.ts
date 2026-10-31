@@ -1,5 +1,5 @@
 import type { LucideIcon } from "lucide-react";
-import { BarChart3, Gamepad2, History, Home, Radio, Shield, Trophy, User } from "lucide-react";
+import { BarChart3, Crown, Gamepad2, History, Home, Radio, Shield, Trophy, User } from "lucide-react";
 
 export interface PlayerNavItem {
   label: string;
@@ -19,6 +19,7 @@ export const playerNavigation: PlayerNavItem[] = [
   { label: "Group Stage", href: "/group-stage", icon: Shield },
   { label: "My Tournaments", href: "/my-tournaments", icon: History },
   { label: "Leaderboards", href: "/leaderboards", icon: BarChart3 },
+  { label: "Championship", href: "/championship", icon: Crown, showOnMobile: false },
   // Profile is reachable via the Topbar icon on both breakpoints instead of the primary nav.
   { label: "Profile", href: "/profile", icon: User, showOnDesktop: false, showOnMobile: false }
 ];

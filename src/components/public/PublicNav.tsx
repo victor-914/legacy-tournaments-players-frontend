@@ -11,8 +11,12 @@ import { Button } from "@/components/ui/Button";
 
 const NAV_LINKS = [
   { label: "Home", href: "/" },
-  { label: "Tournaments", href: "/#tournaments" }
+  { label: "Tournaments", href: "/#tournaments" },
+  { label: "Championship", href: "/championship" }
 ];
+
+const isActiveLink = (pathname: string | null, href: string) =>
+  pathname === href || (href !== "/" && !href.includes("#") && Boolean(pathname?.startsWith(`${href}/`)));
 
 export function PublicNav() {
   const pathname = usePathname();
@@ -30,7 +34,7 @@ export function PublicNav() {
 
         <DesktopLinks>
           {NAV_LINKS.map((link) => (
-            <NavLink key={link.href} href={link.href} $active={pathname === link.href}>
+            <NavLink key={link.href} href={link.href} $active={isActiveLink(pathname, link.href)}>
               {link.label}
             </NavLink>
           ))}

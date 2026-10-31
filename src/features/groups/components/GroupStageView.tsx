@@ -1,11 +1,13 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { CalendarDays, Clock3, Shield, Trophy } from "lucide-react";
 import styled, { css } from "styled-components";
 import { Card, CardBody } from "@/components/ui/Card";
 import { ApprovalNotice } from "@/components/auth/ApprovalNotice";
+import { KnockoutGroupPanel } from "@/features/championship/components/KnockoutGroupPanel";
 import { LeaderboardTable } from "@/components/ui/LeaderboardTable";
 import { PageLoader } from "@/components/ui/PageLoader";
 import { PageStack, SectionTitle, TableScroller } from "@/components/ui/PagePrimitives";
@@ -47,7 +49,10 @@ export function GroupStageView() {
         <Card>
           <Notice>
             <strong>Group stage unavailable</strong>
-            <span>We could not load your current cycle and group information.</span>
+            <span>
+              We could not load a current group for you. If the season&apos;s qualifying cycles are over, the championship is under way:{" "}
+              <Link href="/championship">watch the championship</Link>.
+            </span>
           </Notice>
         </Card>
       </PageStack>
@@ -105,6 +110,7 @@ export function GroupStageView() {
               </TableScroller>
             </CardBody>
           </Card>
+          <KnockoutGroupPanel />
         </>
       ) : (
         <HistoryStack>
