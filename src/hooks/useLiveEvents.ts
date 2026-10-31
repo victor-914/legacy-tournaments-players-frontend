@@ -92,6 +92,26 @@ export function useLiveEvents() {
       pushNotification("Your approval status has been updated.");
     });
 
+    // A whole round robin arrives as many fixture events at once: notify once.
+    let fixtureBurst = 0;
+    let fixtureTimer: ReturnType<typeof setTimeout> | null = null;
+    const handleFixtureAssigned = () => {
+      fixtureBurst += 1;
+      void queryClient.invalidateQueries({ queryKey: ["championship", "my-fixtures"] });
+      void queryClient.invalidateQueries({ queryKey: ["find-matches"] });
+      if (fixtureTimer) clearTimeout(fixtureTimer);
+      fixtureTimer = setTimeout(() => {
+        pushNotification(
+          fixtureBurst > 1
+            ? `${fixtureBurst} championship fixtures were set for you. Check your group stage.`
+            : "A championship fixture was set or updated. Check your group stage."
+        );
+        fixtureBurst = 0;
+        fixtureTimer = null;
+      }, 1500);
+    };
+    socket.on("fixture:assigned", handleFixtureAssigned);
+
     socket.on("cycleAdvanced", (payload?: { cycleName?: string }) => {
       void queryClient.invalidateQueries({ queryKey: ["players-me"] });
       void queryClient.invalidateQueries({ queryKey: ["player-group-stage"] });
@@ -102,6 +122,8 @@ export function useLiveEvents() {
     });
 
     return () => {
+      socket.off("fixture:assigned", handleFixtureAssigned);
+      if (fixtureTimer) clearTimeout(fixtureTimer);
       socket.off("standingsUpdated");
       socket.off("leaderboardUpdated");
       socket.off("matchVerified");
