@@ -10,7 +10,17 @@ import type { MyFixture } from "@/features/championship/types";
 
 const formatDue = (value: string | null) =>
   value
-    ? new Date(value).toLocaleString(undefined, { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })
+    ? new Date(value)
+        .toLocaleString("en-GB", {
+          weekday: "short",
+          day: "numeric",
+          month: "short",
+          hour: "numeric",
+          minute: "2-digit",
+          hour12: true,
+          timeZone: "Africa/Lagos"
+        })
+        .replace(/\b(am|pm)\b/, (match) => match.toUpperCase())
     : "No deadline";
 
 const fixtureState = (fixture: MyFixture) => {
@@ -19,6 +29,9 @@ const fixtureState = (fixture: MyFixture) => {
   if (fixture.status === "disputed" || fixture.status === "pending_admin_approval") return { label: "Under review", tone: "warn" };
   if (fixture.status === "played") return { label: "Awaiting confirmation", tone: "warn" };
   if (fixture.overdue) return { label: "Overdue", tone: "late" };
+  if (fixture.lockReason === "paused") return { label: "Paused by admin", tone: "locked" };
+  if (fixture.lockReason === "hold") return { label: "On hold", tone: "locked" };
+  if (fixture.locked) return { label: "Not open yet", tone: "locked" };
   return { label: "Scheduled", tone: "todo" };
 };
 
@@ -59,9 +72,15 @@ export function KnockoutGroupPanel() {
                 <li key={fixture.id} data-tone={state.tone}>
                   <span className="round">{fixture.round ? `R${fixture.round}` : "—"}</span>
                   <span className="opponent">vs {opponent.gameTag}</span>
-                  <span className="due">{state.tone === "done" ? `${myScore ?? "–"} – ${theirScore ?? "–"}` : formatDue(fixture.dueAt)}</span>
+                  <span className="due">{state.tone === "done"
+                      ? `${myScore ?? "–"} – ${theirScore ?? "–"}`
+                      : state.tone === "locked"
+                        ? fixture.lockReason === "not_open" || !fixture.lockReason
+                          ? `Opens ${formatDue(fixture.opensAt ?? null)} (Lagos)`
+                          : "Waiting for admin"
+                        : `Due ${formatDue(fixture.dueAt)} (Lagos)`}</span>
                   <span className="state">{state.label}</span>
-                  {state.tone === "done" ? <span /> : <Link href={`/matches/${fixture.id}`}>Open</Link>}
+                  {state.tone === "done" || state.tone === "locked" ? <span /> : <Link href={`/matches/${fixture.id}`}>Open</Link>}
                 </li>
               );
             })}
@@ -208,6 +227,10 @@ const Fixtures = styled.ol`
 
   li[data-tone="todo"] .state {
     color: ${({ theme }) => theme.colors.gold};
+  }
+
+  li[data-tone="locked"] {
+    opacity: 0.6;
   }
 
   a {

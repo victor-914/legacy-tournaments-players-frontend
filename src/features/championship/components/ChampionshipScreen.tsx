@@ -5,7 +5,7 @@ import { useState } from "react";
 import styled from "styled-components";
 import { PublicGroupLeaderboardView } from "@/features/public-leaderboard/components/PublicGroupLeaderboardView";
 import { useChampionshipState } from "@/features/championship/hooks/useChampionship";
-import { ChampionshipChrome, ClassChip, GroupsBoard, Muted, Panel, PanelTitle } from "@/features/championship/components/ChampionshipChrome";
+import { ChampionshipChrome, GroupsBoard, Muted, Panel, PanelTitle } from "@/features/championship/components/ChampionshipChrome";
 import { DrawReveal } from "@/features/championship/components/DrawReveal";
 import type { ChampionshipState } from "@/features/championship/types";
 
@@ -90,7 +90,6 @@ function LiveDraw({ state }: { state: ChampionshipState }) {
             {state.recent.map((pick) => (
               <li key={pick.order}>
                 <span className="order">{String(pick.order).padStart(2, "0")}</span>
-                <ClassChip value={pick.drawClass} />
                 <span className="name">{pick.gameTag}</span>
                 <span className="group">{pick.group}</span>
               </li>
