@@ -2,11 +2,10 @@
 
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import styled from "styled-components";
-import { ClassChip } from "@/features/championship/components/ChampionshipChrome";
-import { CLASS_TIERS, REVEAL_STAGES, type DrawCurrent, type DrawStatus } from "@/features/championship/types";
+import { REVEAL_STAGES, type DrawCurrent, type DrawStatus } from "@/features/championship/types";
 
 const STAGE_TITLES: Record<string, string> = {
-  class: "Class reveal",
+  class: "Next player",
   rank: "Season rank",
   stats: "Season record",
   name: "Player",
@@ -14,7 +13,8 @@ const STAGE_TITLES: Record<string, string> = {
 };
 
 // The live "who's next" card. Each stage the admin advances adds one layer:
-// class → rank → stats → name → group. Fields for later stages are not sent
+// rank → stats → name → group. (The first "class" stage is kept as a
+// neutral "next player" beat; classes are not shown to players.) Fields for later stages are not sent
 // by the server until that stage, so there is nothing to peek at.
 export function DrawReveal({ current, status, total, drawn }: { current: DrawCurrent | null; status: DrawStatus; total: number; drawn: number }) {
   const reduceMotion = useReducedMotion();
@@ -36,19 +36,15 @@ export function DrawReveal({ current, status, total, drawn }: { current: DrawCur
     );
   }
 
-  const isTopSeed = current.drawClass === "S";
   return (
-    <Stage $glow={isTopSeed}>
+    <Stage>
       <StageLabel>
         Pick #{current.order} · {STAGE_TITLES[current.stage]}
         {current.paused ? " · paused" : ""}
       </StageLabel>
       <AnimatePresence mode="wait">
         <Card key={current.order} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.25 }}>
-          <motion.div initial={reduceMotion ? { opacity: 0 } : { opacity: 0, scale: isTopSeed ? 1.8 : 1.3 }} animate={{ opacity: 1, scale: 1 }} transition={{ type: "spring", stiffness: 120, damping: 16 }}>
-            <ClassChip value={current.drawClass} size="lg" />
-          </motion.div>
-          <Tier>{CLASS_TIERS[current.drawClass] ?? `Class ${current.drawClass}`}</Tier>
+          {stageIndex < 1 ? <Tier>Next player coming up</Tier> : null}
 
           {stageIndex >= 1 && current.seasonRank ? (
             <motion.div initial={enter} animate={shown} transition={{ duration: 0.45 }}>
@@ -89,7 +85,7 @@ export function DrawReveal({ current, status, total, drawn }: { current: DrawCur
           ) : null}
 
           {stageIndex >= 3 ? (
-            <Name initial={reduceMotion ? { opacity: 0 } : { opacity: 0, letterSpacing: "0.6em" }} animate={{ opacity: 1, letterSpacing: "0.04em" }} transition={{ duration: isTopSeed ? 1 : 0.6 }}>
+            <Name initial={reduceMotion ? { opacity: 0 } : { opacity: 0, letterSpacing: "0.6em" }} animate={{ opacity: 1, letterSpacing: "0.04em" }} transition={{ duration: 0.6 }}>
               {current.gameTag}
             </Name>
           ) : null}

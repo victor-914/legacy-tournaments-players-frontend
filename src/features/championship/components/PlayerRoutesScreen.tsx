@@ -3,8 +3,7 @@
 import { useMemo, useState } from "react";
 import styled from "styled-components";
 import { useChampionshipBracket, useChampionshipState } from "@/features/championship/hooks/useChampionship";
-import { ChampionshipChrome, ClassChip, Muted, Panel, PanelTitle } from "@/features/championship/components/ChampionshipChrome";
-import { CLASS_TIERS } from "@/features/championship/types";
+import { ChampionshipChrome, Muted, Panel, PanelTitle } from "@/features/championship/components/ChampionshipChrome";
 
 const ordinal = (value: number) => {
   const suffix = value % 10 === 1 && value !== 11 ? "st" : value % 10 === 2 && value !== 12 ? "nd" : value % 10 === 3 && value !== 13 ? "rd" : "th";
@@ -54,7 +53,6 @@ export function PlayerRoutesScreen() {
                 <li key={row.userId}>
                   <button type="button" data-active={selected?.userId === row.userId} onClick={() => setSelectedId(row.userId)}>
                     <span className="rank">#{row.seasonRank}</span>
-                    <ClassChip value={row.drawClass} />
                     <span className="name">{row.gameTag}</span>
                     <span className="group">{groupByUser.get(row.userId) ?? "–"}</span>
                   </button>
@@ -68,12 +66,6 @@ export function PlayerRoutesScreen() {
             <Panel>
               <PanelTitle>{selected.gameTag}</PanelTitle>
               <Facts>
-                <div>
-                  <span>Class</span>
-                  <b>
-                    {selected.drawClass} · {CLASS_TIERS[selected.drawClass] ?? ""}
-                  </b>
-                </div>
                 <div>
                   <span>Season rank</span>
                   <b>#{selected.seasonRank}</b>

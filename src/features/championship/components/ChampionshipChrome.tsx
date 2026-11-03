@@ -51,14 +51,6 @@ export function ChampionshipChrome({
   );
 }
 
-export function ClassChip({ value, size = "sm" }: { value: string; size?: "sm" | "lg" }) {
-  return (
-    <Chip $class={value} $size={size} aria-label={`Class ${value}`}>
-      {value}
-    </Chip>
-  );
-}
-
 export function GroupsBoard({
   groups,
   highlightGroup,
@@ -81,9 +73,7 @@ export function GroupsBoard({
           <ol>
             {picks.map((pick) => (
               <li key={pick.order}>
-                <ClassChip value={pick.drawClass} />
                 <span className="name">{pick.gameTag}</span>
-                <span className="rank">#{pick.seasonRank}</span>
               </li>
             ))}
             {Array.from({ length: Math.max(0, playersPerGroup - picks.length) }).map((_, index) => (
@@ -178,26 +168,6 @@ const SubLink = styled(Link)<{ $active: boolean }>`
   border: 1px solid ${({ theme, $active }) => ($active ? theme.colors.borderStrong : theme.colors.border)};
   color: ${({ theme, $active }) => ($active ? theme.colors.gold : theme.colors.textMuted)};
   background: ${({ theme, $active }) => ($active ? theme.colors.goldSoft : "transparent")};
-`;
-
-const CHIP_BG: Record<string, string> = {
-  S: "linear-gradient(135deg, #fff1b8, #d4af37 60%, #8a6a12)",
-  A: "linear-gradient(135deg, #ffffff, #cbd5e1)",
-  B: "linear-gradient(135deg, #bde3ff, #3a86ff)",
-  C: "linear-gradient(135deg, #e3d4ff, #8e6cff)"
-};
-
-const Chip = styled.span<{ $class: string; $size: "sm" | "lg" }>`
-  display: inline-grid;
-  place-items: center;
-  flex: none;
-  width: ${({ $size }) => ($size === "lg" ? "4.5rem" : "1.25rem")};
-  height: ${({ $size }) => ($size === "lg" ? "4.5rem" : "1.25rem")};
-  border-radius: ${({ $size }) => ($size === "lg" ? "1rem" : "0.3rem")};
-  font-family: ${({ theme }) => theme.typography.displayFontFamily};
-  font-size: ${({ $size }) => ($size === "lg" ? "2.6rem" : "0.7rem")};
-  color: #0b0b0b;
-  background: ${({ $class }) => CHIP_BG[$class] ?? "#555"};
 `;
 
 const Board = styled.div`

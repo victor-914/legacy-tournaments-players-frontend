@@ -96,6 +96,9 @@ export interface ChampionshipBracket {
 export interface MyFixture {
   id: string;
   round: number | null;
+  opensAt?: string | null;
+  locked?: boolean;
+  lockReason?: "paused" | "hold" | "not_open" | null;
   dueAt: string | null;
   overdue: boolean;
   status: string;
